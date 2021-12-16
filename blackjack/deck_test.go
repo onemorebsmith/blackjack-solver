@@ -1,4 +1,4 @@
-package main
+package blackjack
 
 import "testing"
 
@@ -52,4 +52,11 @@ func TestDeckSuffle(t *testing.T) {
 	}
 	d.Shuffle()
 	ValidateDeck(t, d, 1)
+}
+
+func TestShoeGeneration(t *testing.T) {
+	for i := 1; i < 20; i++ {
+		shoe := GenerateShoe(i)
+		ValidateDeck(t, shoe, i)
+	}
 }

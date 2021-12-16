@@ -4,11 +4,13 @@ import (
 	"log"
 	"math/rand"
 	"time"
+
+	"github.com/onemorebsmith/blackjack-solver/blackjack"
 )
 
 const startingBankrole = float32(1000) // in bet units
-const handsPerGame = 10000
-const iterations = 100
+const handsPerGame = 1000
+const iterations = 64
 
 type GameResults struct {
 	Hands    int
@@ -19,8 +21,8 @@ type GameResults struct {
 	Result   float32
 }
 
-func PlayGame(rules *BlackjackGameRules, hands int64, bankrole float32) GameResults {
-	deck := GenerateShoe(6)
+func PlayGame(rules *blackjack.BlackjackGameRules, hands int64, bankrole float32) GameResults {
+	deck := blackjack.GenerateShoe(6)
 
 	totalGames := 0
 	playedHands := 0
@@ -35,9 +37,9 @@ func PlayGame(rules *BlackjackGameRules, hands int64, bankrole float32) GameResu
 	// 	HandResultWin:             0,
 	// }
 	for i := 0; i < handsPerGame; i++ {
-		var handResults []HandResult
+		var handResults []blackjack.HandResult
 		before := bankrole
-		handResults, bankrole = PlayHand(deck, rules, bankrole)
+		handResults, bankrole = blackjack.PlayHand(deck, rules, bankrole)
 		if bankrole > before {
 			netWins++
 		} else if bankrole < before {
@@ -46,7 +48,7 @@ func PlayGame(rules *BlackjackGameRules, hands int64, bankrole float32) GameResu
 		if bankrole <= 0 {
 			break
 		}
-		if deck.idx > DeckSize*5 {
+		if deck.Remaining() < blackjack.DeckSize {
 			deck.Shuffle()
 		}
 		playedHands += len(handResults)
@@ -65,12 +67,12 @@ func PlayGame(rules *BlackjackGameRules, hands int64, bankrole float32) GameResu
 
 func main() {
 	rand.Seed(time.Now().Unix())
-	bjRules := NewBlackjackGameRules(InitGame(h17Rules, h17Splits))
+	bjRules := blackjack.NewBlackjackGameRules(blackjack.InitGame(blackjack.H17Rules, blackjack.H17Splits))
 	bjRules.SetDealerHitsSoft17(true)
 	bjRules.SetDoubleAfterSplit(true)
 	bjRules.SetMaxPlayerSplits(2)
 	bjRules.SetUseSimpleDeviations(true)
-	bjRules.SetBidspread(NewBidspread(
+	bjRules.SetBidspread(blackjack.NewBidspread(
 		map[int]float32{
 			0: 1,
 			1: 1,

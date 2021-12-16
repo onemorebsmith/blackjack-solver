@@ -1,4 +1,4 @@
-package main
+package blackjack
 
 import (
 	"math"
@@ -15,6 +15,17 @@ type Deck struct {
 	idx      int
 	Count    int
 	deckSize int
+}
+
+// Creates `shoe` of 1+ decks, unshuffled initially
+func GenerateShoe(decks int) *Deck {
+	shoe := GenerateDeck()
+	for i := 1; i < decks; i++ {
+		additionalDeck := GenerateDeck()
+		shoe.Cards = append(shoe.Cards, additionalDeck.Cards...)
+	}
+
+	return shoe
 }
 
 // Creates a non-suffled full 52 card deck
@@ -69,4 +80,8 @@ func (d *Deck) Deal() Card {
 	d.idx++
 	d.Count += c.CountValue
 	return c
+}
+
+func (d *Deck) Remaining() int {
+	return len(d.Cards) - d.idx
 }

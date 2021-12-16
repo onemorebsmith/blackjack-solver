@@ -1,9 +1,9 @@
-package main
+package blackjack
 
 import "testing"
 
 func MakeTestRules() *BlackjackGameRules {
-	return NewBlackjackGameRules(InitGame(h17Rules, h17Splits))
+	return NewBlackjackGameRules(InitGame(H17Rules, H17Splits))
 }
 
 func MakeHand(values ...int) Hand {

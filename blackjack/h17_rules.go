@@ -1,6 +1,6 @@
-package main
+package blackjack
 
-var h17Rules = []RuleShorthand{
+var H17Rules = []RuleShorthand{
 	{DealerCard: 2, PlayerDoublesOn: []int{10, 11}, PlayerHitsOn: []int{2, 3, 4, 5, 6, 7, 8, 9, 12}},
 	{DealerCard: 3, PlayerDoublesOn: []int{9, 10, 11}, PlayerHitsOn: []int{2, 3, 4, 5, 6, 7, 8, 12}},
 	{DealerCard: 4, PlayerDoublesOn: []int{9, 10, 11}, PlayerHitsOn: []int{2, 3, 4, 5, 6, 7, 8}},
@@ -24,7 +24,7 @@ var h17Rules = []RuleShorthand{
 	{Soft: true, DealerCard: 11, PlayerHitsOn: []int{18, 17, 16, 15, 14, 13}},
 }
 
-var h17Splits = []SplitRule{
+var H17Splits = []SplitRule{
 	{PlayerCard: 11, DealerUpcard: []int{2, 3, 4, 5, 6, 7, 8, 9, 10, 11}},
 	{PlayerCard: 10, DealerUpcard: []int{}},
 	{PlayerCard: 9, DealerUpcard: []int{2, 3, 4, 5, 6, 8, 9}},

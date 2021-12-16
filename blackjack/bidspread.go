@@ -1,4 +1,4 @@
-package main
+package blackjack
 
 type Bidspread struct {
 	spread   map[int]float32
