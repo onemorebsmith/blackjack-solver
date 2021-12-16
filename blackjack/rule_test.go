@@ -1,6 +1,9 @@
 package blackjack
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func MakeTestRules() *BlackjackGameRules {
 	return NewBlackjackGameRules(InitGame(H17Rules, H17Splits))
@@ -9,8 +12,15 @@ func MakeTestRules() *BlackjackGameRules {
 func MakeHand(values ...int) Hand {
 	h := Hand{}
 	for _, v := range values {
+		name := fmt.Sprintf("%d", v)
+		if v == 11 {
+			name = `A`
+		}
+
 		h.Cards = append(h.Cards, Card{
 			Value: v,
+			Name:  name,
+			Suit:  SuitSpades,
 		})
 	}
 	return h

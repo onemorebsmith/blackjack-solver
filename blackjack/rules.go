@@ -82,6 +82,36 @@ const (
 	PlayerDecisionSplitAces
 )
 
+func (d PlayerDecision) ToString() string {
+	switch d {
+	case PlayerDecisionHit:
+		return `hit`
+	case PlayerDecisionStand:
+		return `stand`
+	case PlayerDecisionDouble:
+		return `double`
+	case PlayerDecisionSplit:
+		return `split`
+	case PlayerDecisionSplitAces:
+		return `split aces`
+	}
+	return `unknown`
+}
+
+func (rs *BlackjackGameRules) MakeDealerDecision(dealerCards Hand) PlayerDecision {
+	value, soft := dealerCards.HandValue()
+	if value > 17 {
+		return PlayerDecisionStand
+	}
+	if value == 17 {
+		if soft && rs.DealerHitsSoft17 {
+			return PlayerDecisionHit
+		}
+		return PlayerDecisionStand
+	}
+	return PlayerDecisionHit
+}
+
 func (rs *BlackjackGameRules) MakePlayerDecision(playerCards Hand, dealerUpcard Card, splitCounter int) PlayerDecision {
 	natural := len(playerCards.Cards) == 2
 	playerValue, soft := playerCards.HandValue()

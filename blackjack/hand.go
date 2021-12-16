@@ -1,5 +1,7 @@
 package blackjack
 
+import "strings"
+
 type Hand struct {
 	Cards     []Card
 	Doubled   bool
@@ -18,13 +20,15 @@ func (h Hand) HandValue() (int, bool) {
 		}
 	}
 
+	softAces := aceCount
 	for i := 0; i < aceCount; i++ {
 		if val > 21 && soft {
 			val -= 10
+			softAces--
 		}
 	}
 
-	return val, soft
+	return val, softAces > 0
 }
 
 func (h Hand) IsPair() (int, bool) {
@@ -34,10 +38,10 @@ func (h Hand) IsPair() (int, bool) {
 	return h.Cards[0].Value, h.Cards[0].Value == h.Cards[1].Value
 }
 
-// func (h Hand) toString() string {
-// 	s := make([]string, 0, len(h.Cards))
-// 	for _, v := range h.Cards {
-// 		s = append(s, v.ToString())
-// 	}
-// 	return strings.Join(s, " ")
-// }
+func (h Hand) toString() string {
+	s := make([]string, 0, len(h.Cards))
+	for _, v := range h.Cards {
+		s = append(s, v.ToString())
+	}
+	return strings.Join(s, " ")
+}

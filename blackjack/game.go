@@ -1,7 +1,5 @@
 package blackjack
 
-import "log"
-
 const blackjackPayout = float32(1.5)
 
 type BlackjackGameRules struct {
@@ -23,7 +21,7 @@ func NewBlackjackGameRules(rules *Ruleset) *BlackjackGameRules {
 		DoubleAfterSplit:    true,
 		UseSimpleDeviations: false,
 		UseHighLowCounting:  false,
-		bidSpread:           NewBidspread(map[int]BidStrategy{0: BidStrategy{Units: 1, Hands: 1}}),
+		bidSpread:           NewBidspread(map[int]BidStrategy{0: {Units: 1, Hands: 1}}),
 	}
 }
 
@@ -65,7 +63,7 @@ func PlayHand(d *Deck, rules *BlackjackGameRules, bankrole float32) ([]HandResul
 
 	bid := bidStrategy.Units
 	if bankrole < bid*float32(bidStrategy.Hands) {
-		return nil, bankrole
+		return []HandResult{HandResultPush}, bankrole
 	}
 
 	playerCards := Hand{}
@@ -102,44 +100,55 @@ func PlayHand(d *Deck, rules *BlackjackGameRules, bankrole float32) ([]HandResul
 	}
 
 	playerHands := rules.PlayPlayerHand(playerCards, dealerUpcard, d, 0)
-	dealerCards = rules.PlayDealerHand(dealerCards, d)
+	allBusted := true
+	for _, v := range playerHands {
+		if handVal, _ := v.HandValue(); handVal <= 21 {
+			allBusted = false
+			break
+		}
+	}
+
+	if !allBusted {
+		dealerCards = rules.PlayDealerHand(dealerCards, d)
+	}
 
 	dealerValue, _ := dealerCards.HandValue()
 	results := []HandResult{}
-	var handResult HandResult
 	for _, h := range playerHands {
-		handResult, bankrole = CalculateHandResult(h, dealerValue, bankrole, bid)
+		handResult, change := CalculateHandResult(h, dealerValue, bid)
+		bankrole += change
 		results = append(results, handResult)
 	}
+
 	return results, bankrole
 }
 
-func CalculateHandResult(h Hand, dealerValue int, bankrole float32, bid float32) (HandResult, float32) {
+func CalculateHandResult(h Hand, dealerValue int, bid float32) (HandResult, float32) {
+	playerValue, _ := h.HandValue()
+	playerBlackjack := playerValue == 21
+	playerNaturalBlackjack := playerBlackjack && len(h.Cards) == 2 && !h.SplitHand
+
+	if playerNaturalBlackjack {
+		return HandResultBlackjack, (bid * blackjackPayout)
+	}
 	if h.Doubled {
 		bid *= 2
 	}
-	playerValue, _ := h.HandValue()
-	if playerValue > 21 {
-		// player busted
-		log.Println(h)
-		return HandResultLose, bankrole - bid
-	} else if playerValue == 21 && len(h.Cards) == 2 && !h.SplitHand {
-		// natural blackjack, can't happen on splits
-		return HandResultBlackjack, bankrole + (bid * blackjackPayout)
-	} else if dealerValue > 21 && playerValue <= 21 {
-		// dealer busted
-		return HandResultWin, bankrole + bid
-	} else if dealerValue == playerValue {
+	if playerValue == dealerValue {
 		// push
-		return HandResultPush, bankrole
-	} else if dealerValue > playerValue {
-		return HandResultLose, bankrole - bid
-	} else if playerValue > dealerValue { // player Win
-		return HandResultWin, bankrole + bid
-	} else {
-		log.Println("Error? unknown hand result")
-		return HandResultPush, bankrole
+		return HandResultPush, 0
 	}
+	if playerValue > 21 {
+		// player busted, instant loss
+		return HandResultLose, -bid
+	}
+	if (dealerValue > 21) || playerValue > dealerValue {
+		// player wins
+		return HandResultWin, bid
+	}
+
+	// dealer wins
+	return HandResultLose, -bid
 }
 
 func (rs *BlackjackGameRules) PlayPlayerHand(playerHand Hand, dealerUpcard Card, deck *Deck, splitCounter int) []Hand {
@@ -180,10 +189,8 @@ func (rs *BlackjackGameRules) PlayPlayerHand(playerHand Hand, dealerUpcard Card,
 
 func (rs *BlackjackGameRules) PlayDealerHand(dealerHand Hand, deck *Deck) Hand {
 	for {
-		dealerValue, soft := dealerHand.HandValue()
-		if rs.DealerHitsSoft17 && soft && dealerValue == 17 { // H17 vs S17 rule
-			dealerHand.Cards = append(dealerHand.Cards, deck.Deal())
-		} else if dealerValue < 17 {
+		decision := rs.MakeDealerDecision(dealerHand)
+		if decision == PlayerDecisionHit {
 			dealerHand.Cards = append(dealerHand.Cards, deck.Deal())
 		} else {
 			break

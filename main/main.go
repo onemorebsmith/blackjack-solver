@@ -10,7 +10,7 @@ import (
 
 const startingBankrole = float32(1000) // in bet units
 // will run iterations * handsPerGame times
-const handsPerGame = 1000
+const handsPerGame = 10000
 const iterations = 100
 
 type GameResults struct {
@@ -75,13 +75,13 @@ func main() {
 	bjRules.SetDoubleAfterSplit(true) // not implemented
 	bjRules.SetMaxPlayerSplits(2)
 	bjRules.SetUseSimpleDeviations(true)
-	bjRules.SetUseHighLowCounting(true) // <---- Enable/disable card counting
+	bjRules.SetUseHighLowCounting(false) // <---- Enable/disable card counting
 	bjRules.SetBidspread(blackjack.NewBidspread(
 		map[int]blackjack.BidStrategy{
 			0: {Hands: 1, Units: 1},
-			1: {Hands: 1, Units: 1},
+			1: {Hands: 1, Units: 2},
 			2: {Hands: 1, Units: 4},
-			3: {Hands: 1, Units: 6},
+			3: {Hands: 1, Units: 8},
 			4: {Hands: 1, Units: 12},
 		}))
 
