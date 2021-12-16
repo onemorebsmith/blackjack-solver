@@ -23,7 +23,7 @@ func NewBlackjackGameRules(rules *Ruleset) *BlackjackGameRules {
 		DoubleAfterSplit:    true,
 		UseSimpleDeviations: false,
 		UseHighLowCounting:  false,
-		bidSpread:           NewBidspread(map[int]float32{0: 1}),
+		bidSpread:           NewBidspread(map[int]BidStrategy{0: BidStrategy{Units: 1, Hands: 1}}),
 	}
 }
 
@@ -58,11 +58,13 @@ func (bj *BlackjackGameRules) SetUseHighLowCounting(v bool) *BlackjackGameRules 
 }
 
 func PlayHand(d *Deck, rules *BlackjackGameRules, bankrole float32) ([]HandResult, float32) {
-	bid := float32(1)
+	bidStrategy := BidStrategy{Hands: 1, Units: 1}
 	if rules.UseHighLowCounting {
-		bid = rules.bidSpread.Bid(d)
+		bidStrategy = rules.bidSpread.Bid(d)
 	}
-	if bankrole < bid {
+
+	bid := bidStrategy.Units
+	if bankrole < bid*float32(bidStrategy.Hands) {
 		return nil, bankrole
 	}
 
@@ -74,9 +76,9 @@ func PlayHand(d *Deck, rules *BlackjackGameRules, bankrole float32) ([]HandResul
 	playerCards.Cards = append(playerCards.Cards, d.Deal())
 	dealerCards.Cards = append(dealerCards.Cards, d.Deal())
 
-	dealerUpcard := dealerCards.Cards[0].Value
+	dealerUpcard := dealerCards.Cards[1]
 	insurance := false
-	if dealerUpcard == 11 { // insurance?
+	if dealerUpcard.Value == 11 { // insurance?
 		if rules.UseHighLowCounting {
 			tc := d.TrueCount()
 			if rules.UseSimpleDeviations && tc >= 3 {
@@ -99,7 +101,7 @@ func PlayHand(d *Deck, rules *BlackjackGameRules, bankrole float32) ([]HandResul
 		}
 	}
 
-	playerHands := rules.PlayPlayerHand(playerCards, dealerCards.Cards[0], d, 0)
+	playerHands := rules.PlayPlayerHand(playerCards, dealerUpcard, d, 0)
 	dealerCards = rules.PlayDealerHand(dealerCards, d)
 
 	dealerValue, _ := dealerCards.HandValue()
@@ -119,6 +121,7 @@ func CalculateHandResult(h Hand, dealerValue int, bankrole float32, bid float32)
 	playerValue, _ := h.HandValue()
 	if playerValue > 21 {
 		// player busted
+		log.Println(h)
 		return HandResultLose, bankrole - bid
 	} else if playerValue == 21 && len(h.Cards) == 2 && !h.SplitHand {
 		// natural blackjack, can't happen on splits

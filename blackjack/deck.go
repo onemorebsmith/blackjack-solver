@@ -1,7 +1,6 @@
 package blackjack
 
 import (
-	"math"
 	"math/rand"
 	"strings"
 )
@@ -54,11 +53,13 @@ func (d *Deck) ToString() string {
 	return strings.Join(s, " ")
 }
 
+const shuffleFactor = 1000
+
 func (d *Deck) Shuffle() *Deck {
 	d.idx = 0
 	d.Count = 0
 	d.deckSize = len(d.Cards)
-	for i := 0; i < 100000; i++ {
+	for i := 0; i < shuffleFactor; i++ {
 		idxA := rand.Intn(d.deckSize)
 		idxB := rand.Intn(d.deckSize)
 		if idxA != idxB { // swap
@@ -72,7 +73,8 @@ func (d *Deck) Shuffle() *Deck {
 }
 
 func (d *Deck) TrueCount() int {
-	return int(math.Floor(float64(d.Count) / ((float64(d.deckSize - d.idx)) / float64(DeckSize))))
+	remainingDecks := float32(d.deckSize-d.idx) / float32(DeckSize)
+	return int(float32(d.Count) / remainingDecks)
 }
 
 func (d *Deck) Deal() Card {
@@ -83,5 +85,5 @@ func (d *Deck) Deal() Card {
 }
 
 func (d *Deck) Remaining() int {
-	return len(d.Cards) - d.idx
+	return d.deckSize - d.idx
 }

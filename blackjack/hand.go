@@ -33,3 +33,11 @@ func (h Hand) IsPair() (int, bool) {
 	}
 	return h.Cards[0].Value, h.Cards[0].Value == h.Cards[1].Value
 }
+
+// func (h Hand) toString() string {
+// 	s := make([]string, 0, len(h.Cards))
+// 	for _, v := range h.Cards {
+// 		s = append(s, v.ToString())
+// 	}
+// 	return strings.Join(s, " ")
+// }

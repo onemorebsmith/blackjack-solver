@@ -135,29 +135,26 @@ func Test_PlayAAAHand(t *testing.T) {
 	deck := &Deck{
 		idx: 0,
 		Cards: []Card{
-			{Value: 10}, // hand 1 should be A10
-			{Value: 11}, // hand 2 should be AA and split again
-			{Value: 7},  // hand 2 should end up being A 7 4 (soft 18 -> doubled)
+			{Value: 10}, // hand 1 should be A10 -> 21
+			{Value: 11}, // hand 2 should be AA -> 12
+			{Value: 7},
 			{Value: 4},
 			{Value: 5},
-			{Value: 2}, // hand 3 should be A 5 2
+			{Value: 2},
 		},
 	}
 
 	rules := MakeTestRules()
 	cards := MakeHand(11, 11)
 	res := rules.PlayPlayerHand(cards, Card{Value: 6}, deck, 0)
-	if len(res) != 3 {
-		t.Fatalf("Should have split on a 14 v 2")
+	if len(res) != 2 {
+		t.Fatalf("Should have split on a AA v 6")
 	}
 	if v, _ := res[0].HandValue(); v != 21 {
 		t.Fatalf("Hand 1 should be 14, got %d", v)
 	}
 	if v, _ := res[1].HandValue(); v != 12 {
 		t.Fatalf("Hand 2 should be 12, got %d", v)
-	}
-	if v, _ := res[2].HandValue(); v != 18 {
-		t.Fatalf("Hand 2 should be 18, got %d", v)
 	}
 }
 

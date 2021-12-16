@@ -9,33 +9,30 @@ import (
 )
 
 const startingBankrole = float32(1000) // in bet units
+// will run iterations * handsPerGame times
 const handsPerGame = 1000
-const iterations = 64
+const iterations = 100
 
 type GameResults struct {
-	Hands    int
-	WinRate  float32
-	LoseRate float32
-	PushRate float32
-	EV       float32
-	Result   float32
+	Hands      int
+	WinRate    float32
+	LoseRate   float32
+	PushRate   float32
+	Blackjacks float32
+	EV         float32
+	Result     float32
+	AvgTc      float32
 }
 
 func PlayGame(rules *blackjack.BlackjackGameRules, hands int64, bankrole float32) GameResults {
-	deck := blackjack.GenerateShoe(6)
+	deck := blackjack.GenerateShoe(6).Shuffle()
 
 	totalGames := 0
 	playedHands := 0
 	netWins := 0
 	netLosses := 0
+	blackjacks := 0
 
-	// results := map[HandResult]int{
-	// 	HandResultBlackjack:       0,
-	// 	HandResultDealerBlackjack: 0,
-	// 	HandResultLose:            0,
-	// 	HandResultPush:            0,
-	// 	HandResultWin:             0,
-	// }
 	for i := 0; i < handsPerGame; i++ {
 		var handResults []blackjack.HandResult
 		before := bankrole
@@ -48,7 +45,12 @@ func PlayGame(rules *blackjack.BlackjackGameRules, hands int64, bankrole float32
 		if bankrole <= 0 {
 			break
 		}
-		if deck.Remaining() < blackjack.DeckSize {
+
+		if handResults[0] == blackjack.HandResultBlackjack {
+			blackjacks++
+		}
+
+		if deck.Remaining() < blackjack.DeckSize*1.5 {
 			deck.Shuffle()
 		}
 		playedHands += len(handResults)
@@ -56,29 +58,31 @@ func PlayGame(rules *blackjack.BlackjackGameRules, hands int64, bankrole float32
 	}
 
 	return GameResults{
-		Result:   bankrole,
-		Hands:    totalGames,
-		WinRate:  float32(netWins) / float32(totalGames) * 100,
-		LoseRate: float32(netLosses) / float32(totalGames) * 100,
-		PushRate: float32(totalGames-netWins-netLosses) / float32(totalGames) * 100,
-		EV:       (bankrole - startingBankrole) / float32(playedHands),
+		Result:     bankrole,
+		Hands:      totalGames,
+		Blackjacks: float32(blackjacks) / float32(totalGames) * 100,
+		WinRate:    float32(netWins) / float32(totalGames) * 100,
+		LoseRate:   float32(netLosses) / float32(totalGames) * 100,
+		PushRate:   float32(totalGames-netWins-netLosses) / float32(totalGames) * 100,
+		EV:         (bankrole - startingBankrole) / float32(playedHands),
 	}
 }
 
 func main() {
 	rand.Seed(time.Now().Unix())
 	bjRules := blackjack.NewBlackjackGameRules(blackjack.InitGame(blackjack.H17Rules, blackjack.H17Splits))
-	bjRules.SetDealerHitsSoft17(true)
-	bjRules.SetDoubleAfterSplit(true)
+	bjRules.SetDealerHitsSoft17(false)
+	bjRules.SetDoubleAfterSplit(true) // not implemented
 	bjRules.SetMaxPlayerSplits(2)
 	bjRules.SetUseSimpleDeviations(true)
+	bjRules.SetUseHighLowCounting(true) // <---- Enable/disable card counting
 	bjRules.SetBidspread(blackjack.NewBidspread(
-		map[int]float32{
-			0: 1,
-			1: 1,
-			2: 3,
-			3: 5,
-			4: 8,
+		map[int]blackjack.BidStrategy{
+			0: {Hands: 1, Units: 1},
+			1: {Hands: 1, Units: 1},
+			2: {Hands: 1, Units: 4},
+			3: {Hands: 1, Units: 6},
+			4: {Hands: 1, Units: 12},
 		}))
 
 	resultsChannel := make(chan GameResults)
@@ -112,6 +116,7 @@ func main() {
 	for _, v := range overallResults {
 		aggregatedResults.EV += v.EV
 		aggregatedResults.Hands += v.Hands
+		aggregatedResults.Blackjacks += v.Blackjacks
 		aggregatedResults.WinRate += v.WinRate
 		aggregatedResults.LoseRate += v.LoseRate
 		aggregatedResults.PushRate += v.PushRate
@@ -122,6 +127,7 @@ func main() {
 	aggregatedResults.WinRate /= float32(iterations)
 	aggregatedResults.LoseRate /= float32(iterations)
 	aggregatedResults.PushRate /= float32(iterations)
+	aggregatedResults.Blackjacks /= float32(iterations)
 	aggregatedResults.Result /= float32(iterations)
 
 	log.Printf("Overall: %+v", aggregatedResults)

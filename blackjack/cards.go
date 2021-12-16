@@ -2,7 +2,6 @@ package blackjack
 
 import (
 	"fmt"
-	"strings"
 )
 
 type Suit int
@@ -59,12 +58,4 @@ func SuitToString(s Suit) string {
 
 func (c *Card) ToString() string {
 	return fmt.Sprintf("%s%s", SuitToString(c.Suit), c.Name)
-}
-
-func PrintHand(c []Card) string {
-	s := make([]string, 0, len(c))
-	for _, v := range c {
-		s = append(s, v.ToString())
-	}
-	return strings.Join(s, " ")
 }

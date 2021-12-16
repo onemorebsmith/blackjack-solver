@@ -33,6 +33,6 @@ var H17Splits = []SplitRule{
 	{PlayerCard: 6, DealerUpcard: []int{2, 3, 4, 5, 6}},
 	{PlayerCard: 5, DealerUpcard: []int{}},
 	{PlayerCard: 4, DealerUpcard: []int{5, 6}},
-	{PlayerCard: 3, DealerUpcard: []int{2, 3, 4, 5, 6, 7, 8}},
-	{PlayerCard: 2, DealerUpcard: []int{2, 3, 4, 5, 6, 7, 8}},
+	{PlayerCard: 3, DealerUpcard: []int{2, 3, 4, 5, 6, 7}},
+	{PlayerCard: 2, DealerUpcard: []int{2, 3, 4, 5, 6, 7}},
 }

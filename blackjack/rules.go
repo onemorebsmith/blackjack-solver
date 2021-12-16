@@ -127,16 +127,16 @@ func InitGame(rules []RuleShorthand, splits []SplitRule) *Ruleset {
 			created := Rule{
 				DealerUpCard:  dealerCard,
 				PlayerValue:   playerCard,
-				PlayerHits:    false,
-				PlayerDoubles: false,
+				PlayerHits:    playerCard < 11,
+				PlayerDoubles: playerCard == 11,
 				Soft:          false,
 			}
 			ruleMap[created.Hash()] = created
 			createdSoft := Rule{
 				DealerUpCard:  dealerCard,
 				PlayerValue:   playerCard,
-				PlayerHits:    false,
-				PlayerDoubles: false,
+				PlayerHits:    playerCard < 11,
+				PlayerDoubles: playerCard == 11,
 				Soft:          true,
 			}
 			ruleMap[createdSoft.Hash()] = createdSoft

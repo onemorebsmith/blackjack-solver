@@ -1,16 +1,21 @@
 package blackjack
 
-type Bidspread struct {
-	spread   map[int]float32
-	maxCount int
-	maxBet   float32
+type BidStrategy struct {
+	Hands int
+	Units float32
 }
 
-func NewBidspread(spread map[int]float32) *Bidspread {
+type Bidspread struct {
+	spread   map[int]BidStrategy
+	maxCount int
+	maxBet   BidStrategy
+}
+
+func NewBidspread(spread map[int]BidStrategy) *Bidspread {
 	maxSpread := 0
-	maxBet := float32(0)
+	maxBet := BidStrategy{Hands: 1, Units: 1}
 	for k, v := range spread {
-		if k > maxSpread {
+		if k >= maxSpread {
 			maxSpread = k
 			maxBet = v
 		}
@@ -22,7 +27,7 @@ func NewBidspread(spread map[int]float32) *Bidspread {
 	}
 }
 
-func (bs *Bidspread) Bid(d *Deck) float32 {
+func (bs *Bidspread) Bid(d *Deck) BidStrategy {
 	count := d.TrueCount()
 	if count >= bs.maxCount {
 		return bs.maxBet
@@ -30,5 +35,5 @@ func (bs *Bidspread) Bid(d *Deck) float32 {
 	if bid, exists := bs.spread[count]; exists {
 		return bid
 	}
-	return float32(1)
+	return BidStrategy{Hands: 1, Units: 1}
 }
