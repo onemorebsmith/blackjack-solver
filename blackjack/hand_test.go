@@ -1,6 +1,10 @@
 package blackjack
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/onemorebsmith/blackjack-solver/blackjack/core"
+)
 
 func TestHandCounts(t *testing.T) {
 	tests := []struct {
@@ -9,7 +13,7 @@ func TestHandCounts(t *testing.T) {
 		Soft     bool
 	}{
 		// Soft Ace hands
-		{Hand: MakeHand(11, 11), Soft: true},
+		{Hand: MakeHand(11, 11), Expected: 12, Soft: true},
 		{Hand: MakeHand(11, 2), Expected: 13, Soft: true},
 		{Hand: MakeHand(11, 3), Expected: 14, Soft: true},
 		{Hand: MakeHand(11, 4), Expected: 15, Soft: true},
@@ -167,7 +171,7 @@ func TestH17SoftHandDecisions(t *testing.T) {
 	for _, tc := range tests {
 		defAction, hasDefault := tc.ExpectedDecisions[-1]
 		for dealerCard := 2; dealerCard < 11; dealerCard++ {
-			decision := rules.MakePlayerDecision(tc.Hand, Card{Value: dealerCard}, 0)
+			decision := rules.MakePlayerDecision(tc.Hand, core.Card{Value: dealerCard}, 0)
 			if hasDefault {
 				if defAction != decision {
 					t.Fatalf("Unexpected default player decision for `%s` vs `%d`", tc.Hand.toString(), dealerCard)
@@ -299,7 +303,7 @@ func TestH17HardHandDecisions(t *testing.T) {
 	for _, tc := range tests {
 		defAction, hasDefault := tc.ExpectedDecisions[-1]
 		for dealerCard := 2; dealerCard < 11; dealerCard++ {
-			decision := rules.MakePlayerDecision(tc.Hand, Card{Value: dealerCard}, 0)
+			decision := rules.MakePlayerDecision(tc.Hand, core.Card{Value: dealerCard}, 0)
 			if hasDefault {
 				if defAction != decision {
 					t.Fatalf("Unexpected default player decision for `%s` vs `%d` , got %s, expected %s",
@@ -433,7 +437,7 @@ func TestH17SplitHandDecisions(t *testing.T) {
 	for _, tc := range tests {
 		defAction, hasDefault := tc.ExpectedDecisions[-1]
 		for dealerCard := 2; dealerCard < 11; dealerCard++ {
-			decision := rules.MakePlayerDecision(tc.Hand, Card{Value: dealerCard}, 0)
+			decision := rules.MakePlayerDecision(tc.Hand, core.Card{Value: dealerCard}, 0)
 			split := decision == PlayerDecisionSplitAces || decision == PlayerDecisionSplit
 			if hasDefault {
 				if defAction != decision {

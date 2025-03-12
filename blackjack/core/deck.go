@@ -1,4 +1,4 @@
-package blackjack
+package core
 
 import (
 	"math/rand"
@@ -10,10 +10,10 @@ const Suits = 4
 const DeckSize = SuiteSize * Suits
 
 type Deck struct {
-	Cards    []Card
-	idx      int
-	Count    int
-	deckSize int
+	Cards       []Card
+	idx         int
+	deckSize    int
+	PreviewCard func(c Card)
 }
 
 // Creates `shoe` of 1+ decks, unshuffled initially
@@ -24,6 +24,7 @@ func GenerateShoe(decks int) *Deck {
 		shoe.Cards = append(shoe.Cards, additionalDeck.Cards...)
 	}
 
+	shoe.deckSize = decks * DeckSize
 	return shoe
 }
 
@@ -39,8 +40,9 @@ func GenerateDeck() *Deck {
 	}
 
 	return &Deck{
-		idx:   0,
-		Cards: all,
+		idx:      0,
+		deckSize: DeckSize,
+		Cards:    all,
 	}
 }
 
@@ -53,37 +55,28 @@ func (d *Deck) ToString() string {
 	return strings.Join(s, " ")
 }
 
-const shuffleFactor = 1000
-
 func (d *Deck) Shuffle() *Deck {
+	rand.Shuffle(d.deckSize, func(i, j int) {
+		d.Cards[i], d.Cards[j] = d.Cards[j], d.Cards[i]
+	})
 	d.idx = 0
-	d.Count = 0
-	d.deckSize = len(d.Cards)
-	for i := 0; i < shuffleFactor; i++ {
-		idxA := rand.Intn(d.deckSize)
-		idxB := rand.Intn(d.deckSize)
-		if idxA != idxB { // swap
-			c := d.Cards[idxA]
-			d.Cards[idxA] = d.Cards[idxB]
-			d.Cards[idxB] = c
-		}
-	}
-
 	return d
-}
-
-func (d *Deck) TrueCount() int {
-	remainingDecks := float32(d.deckSize-d.idx) / float32(DeckSize)
-	return int(float32(d.Count) / remainingDecks)
 }
 
 func (d *Deck) Deal() Card {
 	c := d.Cards[d.idx]
 	d.idx++
-	d.Count += c.CountValue
+	if d.PreviewCard != nil {
+		d.PreviewCard(c)
+	}
+
 	return c
 }
 
 func (d *Deck) Remaining() int {
 	return d.deckSize - d.idx
+}
+
+func (d *Deck) EstimateRemaining() float32 {
+	return float32((d.deckSize - d.idx)) / 52.0
 }

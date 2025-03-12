@@ -1,4 +1,4 @@
-package blackjack
+package core
 
 import "testing"
 
@@ -35,18 +35,6 @@ func ValidateDeck(t *testing.T, d *Deck, deckCount int) {
 			}
 		}
 	}
-
-	{
-		count := 0
-		for _, v := range d.Cards {
-			count += v.CountValue
-		}
-
-		if count != 0 {
-			t.Fatalf("Count should be balanced, got %d, expected 0", count)
-			t.Fail()
-		}
-	}
 }
 
 func TestDeckGeneration(t *testing.T) {
@@ -70,28 +58,5 @@ func TestShoeGeneration(t *testing.T) {
 	for i := 1; i < 20; i++ {
 		shoe := GenerateShoe(i)
 		ValidateDeck(t, shoe, i)
-	}
-}
-
-func TestTrueCount(t *testing.T) {
-	// 2/3 decks remaining, 8 / 2 = 4
-	shoe := &Deck{idx: DeckSize, deckSize: DeckSize * 3, Count: 8}
-	tc := shoe.TrueCount()
-	if tc != 4 {
-		t.Fatalf("True count wrong, got %d, expected 4", tc)
-	}
-
-	// 3/3 decks remaining, -1 / 3 = 4
-	shoe = &Deck{idx: 1, deckSize: DeckSize * 3, Count: -1}
-	tc = shoe.TrueCount()
-	if tc != 0 {
-		t.Fatalf("True count wrong, got %d, expected 0", tc)
-	}
-
-	// 1/3 decks remaining, -1 / 1 = -1
-	shoe = &Deck{idx: DeckSize * 2, deckSize: DeckSize * 3, Count: -1}
-	tc = shoe.TrueCount()
-	if tc != -1 {
-		t.Fatalf("True count wrong, got %d, expected -1", tc)
 	}
 }

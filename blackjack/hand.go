@@ -1,9 +1,13 @@
 package blackjack
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/onemorebsmith/blackjack-solver/blackjack/core"
+)
 
 type Hand struct {
-	Cards     []Card
+	Cards     []core.Card
 	Doubled   bool
 	SplitHand bool
 }

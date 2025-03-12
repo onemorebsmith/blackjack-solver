@@ -1,11 +1,16 @@
 package blackjack
 
-import "log"
+import (
+	"log"
+
+	"github.com/onemorebsmith/blackjack-solver/blackjack/core"
+)
 
 type HandResult int
 
 const (
 	HandResultPush HandResult = iota
+	HandResultBlackjackPush
 	HandResultWin
 	HandResultBlackjack
 	HandResultDealerBlackjack
@@ -13,10 +18,12 @@ const (
 	HandResultLose
 )
 
-func ResultToString(h HandResult) string {
+func (h HandResult) ToString() string {
 	switch h {
 	case HandResultPush:
 		return `push`
+	case HandResultBlackjackPush:
+		return `blackjack pushs`
 	case HandResultBlackjack:
 		return `blackjack`
 	case HandResultLose:
@@ -41,11 +48,10 @@ func HashSplit(playerCard, dealerCard int) int64 {
 }
 
 type Rule struct {
-	DealerUpCard  int
-	PlayerValue   int
-	Soft          bool
-	PlayerHits    bool
-	PlayerDoubles bool
+	DealerUpCard int
+	PlayerValue  int
+	Action       PlayerAction
+	Soft         bool
 }
 
 type RuleShorthand struct {
@@ -76,6 +82,7 @@ type PlayerDecision int
 
 const (
 	PlayerDecisionStand PlayerDecision = iota
+	PlayerDecisionNatural21
 	PlayerDecisionHit
 	PlayerDecisionDouble
 	PlayerDecisionSplit
@@ -86,6 +93,8 @@ func (d PlayerDecision) ToString() string {
 	switch d {
 	case PlayerDecisionHit:
 		return `hit`
+	case PlayerDecisionNatural21:
+		return `blackjack`
 	case PlayerDecisionStand:
 		return `stand`
 	case PlayerDecisionDouble:
@@ -112,10 +121,14 @@ func (rs *BlackjackGameRules) MakeDealerDecision(dealerCards Hand) PlayerDecisio
 	return PlayerDecisionHit
 }
 
-func (rs *BlackjackGameRules) MakePlayerDecision(playerCards Hand, dealerUpcard Card, splitCounter int) PlayerDecision {
+func (rs *BlackjackGameRules) MakePlayerDecision(playerCards Hand, dealerUpcard core.Card, splitCounter int) PlayerDecision {
 	natural := len(playerCards.Cards) == 2
 	playerValue, soft := playerCards.HandValue()
-	if playerValue == 21 {
+	if natural && playerValue == 21 { // Natural 21
+		return PlayerDecisionNatural21
+	}
+
+	if playerValue == 21 { // Natural 21
 		return PlayerDecisionStand
 	}
 
@@ -138,10 +151,21 @@ func (rs *BlackjackGameRules) MakePlayerDecision(playerCards Hand, dealerUpcard 
 	}
 
 	if rule, exists := rs.playerStrategy.rules[rule.Hash()]; exists {
-		if natural && rule.PlayerDoubles {
-			return PlayerDecisionDouble
-		} else if rule.PlayerHits {
+		switch rule.Action {
+		case PlayerActionDoubleOrHit:
+			if natural {
+				return PlayerDecisionDouble
+			}
 			return PlayerDecisionHit
+		case PlayerActionDoubleOrStand:
+			if natural {
+				return PlayerDecisionDouble
+			}
+			return PlayerDecisionStand
+		case PlayerActionHit:
+			return PlayerDecisionHit
+		case PlayerActionStand:
+			return PlayerDecisionStand
 		}
 	} else {
 		log.Printf("\tMissing rule: dealer %d vs player %d, soft %t", dealerUpcard.Value, playerValue, soft)
@@ -155,47 +179,33 @@ func InitGame(rules []RuleShorthand, splits []SplitRule) *Ruleset {
 	for dealerCard := 2; dealerCard <= 11; dealerCard++ {
 		for playerCard := 2; playerCard <= 21; playerCard++ {
 			created := Rule{
-				DealerUpCard:  dealerCard,
-				PlayerValue:   playerCard,
-				PlayerHits:    playerCard < 11,
-				PlayerDoubles: playerCard == 11,
-				Soft:          false,
+				DealerUpCard: dealerCard,
+				PlayerValue:  playerCard,
+				Action:       PlayerActionStand,
+				Soft:         false,
 			}
 			ruleMap[created.Hash()] = created
 			createdSoft := Rule{
-				DealerUpCard:  dealerCard,
-				PlayerValue:   playerCard,
-				PlayerHits:    playerCard < 11,
-				PlayerDoubles: playerCard == 11,
-				Soft:          true,
+				DealerUpCard: dealerCard,
+				PlayerValue:  playerCard,
+				Action:       PlayerActionStand,
+				Soft:         true,
 			}
 			ruleMap[createdSoft.Hash()] = createdSoft
 		}
 	}
 
-	for _, shorthand := range rules {
-		existingRules := map[int]struct{}{}
-		for _, r := range shorthand.PlayerHitsOn {
-			created := Rule{
-				DealerUpCard: shorthand.DealerCard,
-				PlayerValue:  r,
-				PlayerHits:   true,
-				Soft:         shorthand.Soft,
+	for dealerCard, rule := range RulesV2 {
+		for soft, rules := range rule.Actions {
+			for playerTotal, action := range rules {
+				created := Rule{
+					DealerUpCard: dealerCard,
+					PlayerValue:  playerTotal,
+					Action:       action,
+					Soft:         soft,
+				}
+				ruleMap[created.Hash()] = created
 			}
-			ruleMap[created.Hash()] = created
-			existingRules[shorthand.DealerCard] = struct{}{}
-		}
-
-		for _, r := range shorthand.PlayerDoublesOn {
-			created := Rule{
-				DealerUpCard:  shorthand.DealerCard,
-				PlayerValue:   r,
-				PlayerHits:    false,
-				PlayerDoubles: true,
-				Soft:          shorthand.Soft,
-			}
-			ruleMap[created.Hash()] = created
-			existingRules[shorthand.DealerCard] = struct{}{}
 		}
 	}
 

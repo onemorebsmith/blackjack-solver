@@ -1,4 +1,4 @@
-package blackjack
+package strategies
 
 type BidStrategy struct {
 	Hands int
@@ -27,12 +27,11 @@ func NewBidspread(spread map[int]BidStrategy) *Bidspread {
 	}
 }
 
-func (bs *Bidspread) Bid(d *Deck) BidStrategy {
-	count := d.TrueCount()
-	if count >= bs.maxCount {
+func (bs *Bidspread) Bid(trueCount int) BidStrategy {
+	if trueCount >= bs.maxCount {
 		return bs.maxBet
 	}
-	if bid, exists := bs.spread[count]; exists {
+	if bid, exists := bs.spread[trueCount]; exists {
 		return bid
 	}
 	return BidStrategy{Hands: 1, Units: 1}

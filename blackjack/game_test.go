@@ -2,12 +2,13 @@ package blackjack
 
 import (
 	"testing"
+
+	"github.com/onemorebsmith/blackjack-solver/blackjack/core"
 )
 
-func makeTestDeck() *Deck {
-	return &Deck{
-		idx: 0,
-		Cards: []Card{
+func makeTestDeck() *core.Deck {
+	return &core.Deck{
+		Cards: []core.Card{
 			{Value: 10},
 			{Value: 3},
 			{Value: 5},
@@ -27,7 +28,7 @@ func PlayDealerHand(t *testing.T, dealerHand Hand, rules *BlackjackGameRules) Ha
 func PlaySingleTestHand(t *testing.T, playerHand Hand, dealerUpcard int) []Hand {
 	rules := MakeTestRules()
 	deck := makeTestDeck()
-	return rules.PlayPlayerHand(playerHand, Card{Value: dealerUpcard}, deck, 0)
+	return rules.PlayPlayerHand(playerHand, core.Card{Value: dealerUpcard}, deck, 1, 0)
 }
 
 func PlaySingleTestHandNonSplit(t *testing.T, playerHand Hand, dealerUpcard int) Hand {
@@ -121,9 +122,8 @@ func Test_Play88Hand(t *testing.T) {
 }
 
 func Test_Play888Hand(t *testing.T) {
-	deck := &Deck{
-		idx: 0,
-		Cards: []Card{
+	deck := &core.Deck{
+		Cards: []core.Card{
 			{Value: 8},
 			{Value: 8}, // hand 1 should split twice, then get 8/3 and double
 			{Value: 3},
@@ -139,7 +139,7 @@ func Test_Play888Hand(t *testing.T) {
 	// 88 v dealer 6. Should split
 	rules := MakeTestRules().SetMaxPlayerSplits(3)
 	cards := MakeHand(8, 8)
-	res := rules.PlayPlayerHand(cards, Card{Value: 7}, deck, 0)
+	res := rules.PlayPlayerHand(cards, core.Card{Value: 7}, deck, 1, 0)
 	if len(res) != 4 {
 		t.Fatalf("Should have split on a double 8s")
 	}
@@ -162,29 +162,21 @@ func Test_Play888Hand(t *testing.T) {
 
 func Test_PlayAAAHand(t *testing.T) {
 	// AA v dealer 6. Should split
-	deck := &Deck{
-		idx: 0,
-		Cards: []Card{
+	deck := &core.Deck{
+		Cards: []core.Card{
+			{Value: 11}, // P
+			{Value: 10}, // D
+			{Value: 11}, // P
+			{Value: 6},  // D
 			{Value: 10}, // hand 1 should be A10 -> 21
 			{Value: 11}, // hand 2 should be AA -> 12
-			{Value: 7},
-			{Value: 4},
-			{Value: 5},
-			{Value: 2},
+			{Value: 7},  // dealer busts w/ 23
 		},
 	}
-
-	rules := MakeTestRules()
-	cards := MakeHand(11, 11)
-	res := rules.PlayPlayerHand(cards, Card{Value: 6}, deck, 0)
-	if len(res) != 2 {
-		t.Fatalf("Should have split on a AA v 6")
-	}
-	if v, _ := res[0].HandValue(); v != 21 {
-		t.Fatalf("Hand 1 should be 14, got %d", v)
-	}
-	if v, _ := res[1].HandValue(); v != 12 {
-		t.Fatalf("Hand 2 should be 12, got %d", v)
+	result, newBankrole := PlayHand(deck, MakeTestRules())
+	_ = result
+	if newBankrole != 2 {
+		t.Fatalf("did not properly pay out after split aces, expected 2 got %f", newBankrole)
 	}
 }
 
