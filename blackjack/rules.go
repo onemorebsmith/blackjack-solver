@@ -106,6 +106,10 @@ func (rs *BlackjackGameRules) MakePlayerDecision(playerCards core.Hand, dealerUp
 			hash := HashSplit(val, dealerUpcard.Value)
 			if _, exists := rs.playerStrategy.spits[hash]; exists {
 				if val == 11 {
+					// RSA vs NRSA
+					if playerCards.SplitHand && !rs.ReSplitAces {
+						return PlayerDecisionHit
+					}
 					return PlayerDecisionSplitAces
 				} else {
 					return PlayerDecisionSplit

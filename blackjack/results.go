@@ -1,20 +1,20 @@
 package blackjack
 
-import "math"
-
 type GameResults struct {
-	Hands      int
-	Wins       int
-	Losses     int
-	Pushes     int
-	Blackjacks int
-	EV         float32
-	Result     float32
-	AvgTC      float32
-	HighTC     float32
-	LowTC      float32
-	EVVariance float32
-	BidsByTC   map[int]int
+	Hands            int
+	Wins             int
+	Losses           int
+	Pushes           int
+	Blackjacks       int
+	EV               float32
+	Result           float32
+	AvgTC            float32
+	HighTC           float32
+	LowTC            float32
+	EVVariance       float32
+	HourlyEVVariance float32
+	BidsByTC         map[int]int
+	HandAVs          []float32
 }
 
 func AggregateResults(results ...GameResults) GameResults {
@@ -34,12 +34,5 @@ func AggregateResults(results ...GameResults) GameResults {
 			aggregated.BidsByTC[tc] += freq
 		}
 	}
-	varianceAgg := float32(0)
-	averageEV := aggregated.EV / float32(aggregated.Hands)
-	for _, r := range results {
-		varianceAgg += (r.EV - averageEV) * (r.EV - averageEV)
-	}
-	aggregated.EVVariance = float32(math.Sqrt(float64(varianceAgg) / float64(len(results))))
-
 	return aggregated
 }

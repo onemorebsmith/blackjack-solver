@@ -10,6 +10,7 @@ const blackjackPayout = float32(1.5)
 type BlackjackGameRules struct {
 	playerStrategy   *Ruleset
 	DealerHitsSoft17 bool
+	ReSplitAces      bool
 	MaxPlayerSplits  int
 	DoubleAfterSplit bool
 	Penetration      float32
@@ -25,6 +26,7 @@ func NewBlackjackGameRules(rules *Ruleset) *BlackjackGameRules {
 		MaxPlayerSplits:     4,
 		DoubleAfterSplit:    true,
 		UseSimpleDeviations: false,
+		ReSplitAces:         false,
 		TrackingStrategy:    strategies.InitFlatbetStrategy(),
 	}
 }
@@ -36,6 +38,11 @@ func (bj *BlackjackGameRules) SetPenetration(pen float32) *BlackjackGameRules {
 
 func (bj *BlackjackGameRules) SetDealerHitsSoft17(v bool) *BlackjackGameRules {
 	bj.DealerHitsSoft17 = v
+	return bj
+}
+
+func (bj *BlackjackGameRules) SetResplitAces(v bool) *BlackjackGameRules {
+	bj.ReSplitAces = v
 	return bj
 }
 
@@ -79,7 +86,8 @@ func PlayHand(d *core.Deck, rules *BlackjackGameRules) []core.HandResult {
 	playerHands := []core.Hand{playerCards}
 	// Play the hand if the dealer does not have 21
 	if dealerValue, _ := dealerCards.HandValue(); dealerValue != 21 {
-		playerHands = rules.PlayPlayerHand(playerCards, dealerUpcard, d, bidStrategy.Units, 0)
+		splitCounter := 0
+		playerHands = rules.PlayPlayerHand(playerCards, dealerUpcard, d, bidStrategy.Units, &splitCounter)
 		allBusted := true
 		for _, v := range playerHands {
 			if handVal, _ := v.HandValue(); handVal <= 21 {
@@ -136,10 +144,10 @@ func CalculateHandResult(playerHand core.Hand, dealerHand core.Hand, bid float32
 }
 
 func (rs *BlackjackGameRules) PlayPlayerHand(playerHand core.Hand, dealerUpcard core.Card,
-	deck *core.Deck, bid float32, splitCounter int) []core.Hand {
+	deck *core.Deck, bid float32, splitCounter *int) []core.Hand {
 	finished := false
 	for {
-		decision := rs.MakePlayerDecision(playerHand, dealerUpcard, splitCounter)
+		decision := rs.MakePlayerDecision(playerHand, dealerUpcard, *splitCounter)
 		switch decision {
 		case PlayerDecisionNatural21:
 			finished = true
@@ -148,15 +156,20 @@ func (rs *BlackjackGameRules) PlayPlayerHand(playerHand core.Hand, dealerUpcard 
 			playerHand.Doubled = true
 			finished = true
 		case PlayerDecisionSplitAces:
-			// TODO(bs): handle RSA here
-			handA := core.Hand{Cards: []core.Card{playerHand.Cards[0], deck.Deal()}, SplitHand: true}
-			handB := core.Hand{Cards: []core.Card{playerHand.Cards[1], deck.Deal()}, SplitHand: true}
-			return []core.Hand{handA, handB} // can only take one card after aces
+			hands := make([]core.Hand, 0, 4)
+			hands = append(hands, rs.PlayPlayerHand(core.Hand{Cards: []core.Card{playerHand.Cards[0], deck.Deal()}, SplitHand: true},
+				dealerUpcard, deck, bid, splitCounter)...)
+			hands = append(hands, rs.PlayPlayerHand(core.Hand{Cards: []core.Card{playerHand.Cards[1], deck.Deal()}, SplitHand: true},
+				dealerUpcard, deck, bid, splitCounter)...)
+			return hands // can only take one card after aces
 		case PlayerDecisionSplit:
-			splitCounter++
-			handA := rs.PlayPlayerHand(core.Hand{Cards: []core.Card{playerHand.Cards[0], deck.Deal()}, SplitHand: true}, dealerUpcard, deck, bid, splitCounter)
-			handB := rs.PlayPlayerHand(core.Hand{Cards: []core.Card{playerHand.Cards[1], deck.Deal()}, SplitHand: true}, dealerUpcard, deck, bid, splitCounter)
-			return append(handA, handB...)
+			*splitCounter++
+			hands := make([]core.Hand, 0, 4)
+			hands = append(hands, rs.PlayPlayerHand(core.Hand{Cards: []core.Card{playerHand.Cards[0], deck.Deal()}, SplitHand: true},
+				dealerUpcard, deck, bid, splitCounter)...)
+			hands = append(hands, rs.PlayPlayerHand(core.Hand{Cards: []core.Card{playerHand.Cards[1], deck.Deal()}, SplitHand: true},
+				dealerUpcard, deck, bid, splitCounter)...)
+			return hands
 		case PlayerDecisionHit:
 			playerHand.Cards = append(playerHand.Cards, deck.Deal())
 		case PlayerDecisionStand:
@@ -175,8 +188,7 @@ func (rs *BlackjackGameRules) PlayDealerHand(dealerHand core.Hand, deck *core.De
 	for {
 		decision := rs.MakeDealerDecision(dealerHand)
 		if decision == PlayerDecisionHit {
-			newCard := deck.Deal()
-			dealerHand.Cards = append(dealerHand.Cards, newCard)
+			dealerHand.Cards = append(dealerHand.Cards, deck.Deal())
 		} else {
 			break
 		}
@@ -190,21 +202,24 @@ func PlayShoe(deck *core.Deck, rules *BlackjackGameRules, bankrole float32) Game
 	netLosses := 0
 	blackjacks := 0
 	totalHands := 0
+	handAVs := make([]float32, 0, 50)
 	for {
 		totalHands++
 		handResults := PlayHand(deck, rules)
+		handAV := float32(0)
 		for _, r := range handResults {
 			bankrole += r.AV
+			handAV += r.AV
 			if r.AV > 0 {
 				netWins++
 			} else if bankrole < before {
 				netLosses++
 			}
-
 			if r.Result == core.HandResultBlackjack {
 				blackjacks++
 			}
 		}
+		handAVs = append(handAVs, handAV)
 		if bankrole <= 0 {
 			break
 		}
@@ -220,5 +235,6 @@ func PlayShoe(deck *core.Deck, rules *BlackjackGameRules, bankrole float32) Game
 		Losses:     netLosses,
 		Pushes:     totalHands - netWins - netLosses,
 		EV:         bankrole - before,
+		HandAVs:    handAVs,
 	}
 }
