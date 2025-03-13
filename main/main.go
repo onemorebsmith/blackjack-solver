@@ -5,6 +5,7 @@ import (
 	"log"
 	"math"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -145,6 +146,11 @@ func main() {
 	game = strings.TrimRight(game, " ")
 
 	aggregatedResults := blackjack.AggregateResults(overallResults...)
+	winPct := float32(aggregatedResults.Wins) / float32(aggregatedResults.Hands)
+	losePct := float32(aggregatedResults.Losses) / float32(aggregatedResults.Hands)
+	pushPct := float32(aggregatedResults.Pushes) / float32(aggregatedResults.Hands)
+	bjPct := float32(aggregatedResults.Blackjacks) / float32(aggregatedResults.Hands)
+
 	log.Println("====================================")
 	log.Printf("   Threads %d, elapsed: %s", threads, time.Since(start).Truncate(time.Millisecond))
 	log.Println("====================================")
@@ -152,9 +158,8 @@ func main() {
 	log.Printf("   EV (units):         %f units", aggregatedResults.EV)
 	log.Printf("   EV (hand):          %f units", aggregatedResults.EV/float32(aggregatedResults.Hands))
 	log.Printf("   EV (hourly):        %f units", aggregatedResults.EV/float32(aggregatedResults.Hands)*roundsPerHour)
-	log.Printf("   W/L/P:              %d/%d/%d", aggregatedResults.Wins, aggregatedResults.Losses, aggregatedResults.Pushes)
-	log.Printf("   Blackjacks:         %d", aggregatedResults.Blackjacks)
-	log.Printf("   Blackjack (pct):    %f", float32(aggregatedResults.Blackjacks)/float32(aggregatedResults.Hands))
+	log.Printf("   W/L/P:              %f/%f/%f", winPct, losePct, pushPct)
+	log.Printf("   Blackjacks:         %d, %f%%", aggregatedResults.Blackjacks, bjPct)
 	log.Printf("   1 STD (hand):     +-%f units", variance)
 	log.Printf("   1 STD (hourly):   +-%f units", hourlyVariance)
 	log.Printf("TC Stats --- ")
@@ -162,23 +167,25 @@ func main() {
 	log.Printf("   LowTC  (avg)        %f ", aggregatedResults.LowTC/float32(aggregatedResults.Hands))
 	log.Printf("   AvgTC  (avg)        %f ", aggregatedResults.AvgTC/float32(aggregatedResults.Hands))
 
-	// type bidKv struct {
-	// 	TC   int
-	// 	Freq int
-	// }
-	// bids := []bidKv{}
-	// totalBids := 0
-	// for k, v := range aggregatedResults.BidsByTC {
-	// 	totalBids += v
-	// 	bids = append(bids, bidKv{TC: k, Freq: v})
-	// }
-	// sort.Slice(bids, func(i, j int) bool {
-	// 	return bids[i].TC < bids[j].TC
-	// })
-	// log.Println("    TC |    %   | Freq")
-	// for _, b := range bids {
-	// 	log.Printf("   %d | %f | %d", b.TC, float32(b.Freq)/float32(totalBids), b.Freq)
-	// }
+	// dumpTCFreqTable(aggregatedResults)
+}
 
-	//log.Printf("Overall: %+v", aggregatedResults)
+func dumpTCFreqTable(results blackjack.GameResults) {
+	type bidKv struct {
+		TC   int
+		Freq int
+	}
+	bids := []bidKv{}
+	totalBids := 0
+	for k, v := range results.BidsByTC {
+		totalBids += v
+		bids = append(bids, bidKv{TC: k, Freq: v})
+	}
+	sort.Slice(bids, func(i, j int) bool {
+		return bids[i].TC < bids[j].TC
+	})
+	log.Println("    TC |    %   | Freq")
+	for _, b := range bids {
+		log.Printf("   %d | %f | %d", b.TC, float32(b.Freq)/float32(totalBids), b.Freq)
+	}
 }
