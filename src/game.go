@@ -1,8 +1,8 @@
 package blackjack
 
 import (
-	"github.com/onemorebsmith/blackjack-solver/blackjack/core"
-	"github.com/onemorebsmith/blackjack-solver/blackjack/strategies"
+	"github.com/onemorebsmith/blackjack-solver/src/blackjack/core"
+	"github.com/onemorebsmith/blackjack-solver/src/blackjack/strategies"
 )
 
 const blackjackPayout = float32(1.5)

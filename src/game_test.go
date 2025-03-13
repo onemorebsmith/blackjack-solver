@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/onemorebsmith/blackjack-solver/blackjack/core"
+	"github.com/onemorebsmith/blackjack-solver/src/blackjack/core"
 )
 
 func Check(t *testing.T, check bool, message string) {

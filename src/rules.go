@@ -3,7 +3,7 @@ package blackjack
 import (
 	"log"
 
-	"github.com/onemorebsmith/blackjack-solver/blackjack/core"
+	"github.com/onemorebsmith/blackjack-solver/src/blackjack/core"
 )
 
 type SplitRule struct {

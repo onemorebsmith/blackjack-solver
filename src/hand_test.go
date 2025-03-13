@@ -3,7 +3,7 @@ package blackjack
 import (
 	"testing"
 
-	"github.com/onemorebsmith/blackjack-solver/blackjack/core"
+	"github.com/onemorebsmith/blackjack-solver/src/blackjack/core"
 )
 
 func TestHandCounts(t *testing.T) {
