@@ -16,7 +16,7 @@ import (
 )
 
 // will run iterations * handsPerGame times
-const shoesToSimulate = 1000000
+const shoesToSimulate = 10000000
 
 var threads = runtime.NumCPU()
 var shoesPerThread = shoesToSimulate / threads
@@ -48,10 +48,9 @@ func PlayGame(rules blackjack.BlackjackGameRules, decks int, shoes int, bankrole
 		aggregatedResults = blackjack.AggregateResults(aggregatedResults, result)
 		handAVs = append(handAVs, result.HandAVs...)
 	}
-	// calculate the population variance
+	// calculate the population standard dev
 	evAgg := float32(0)
 	handsGroupedHourly := []float32{}
-
 	hourlyHandCounter := float32(0)
 	hourlyAgg := float32(0)
 	hourlyOverallTotal := float32(0)
@@ -59,7 +58,10 @@ func PlayGame(rules blackjack.BlackjackGameRules, decks int, shoes int, bankrole
 		evAgg += av
 		hourlyAgg += av
 		hourlyHandCounter++
-		if hourlyHandCounter > 100 {
+		// this is horrendous and should be cleaned up, but in order to calculate hourly standard
+		// dev you need to calculate standard dev across the aggregated hourly AVs instead of
+		// the individual hand AVs
+		if hourlyHandCounter > handsPerHour {
 			hourlyOverallTotal += hourlyAgg
 			handsGroupedHourly = append(handsGroupedHourly, hourlyAgg)
 			hourlyHandCounter = 0
@@ -170,6 +172,7 @@ func main() {
 	// dumpTCFreqTable(aggregatedResults)
 }
 
+// dumpTCFreqTable dumps the frequency chart of results to the console. Not terribly helpful but w/e
 func dumpTCFreqTable(results blackjack.GameResults) {
 	type bidKv struct {
 		TC   int

@@ -5,9 +5,10 @@ import (
 )
 
 type Hand struct {
-	Cards     []Card
-	Doubled   bool
-	SplitHand bool
+	Cards         []Card
+	Doubled       bool
+	SplitHand     bool
+	SplitAcesHand bool
 }
 
 func (h Hand) HandValue() (int, bool) {
@@ -40,8 +41,12 @@ func (h Hand) IsPair() (int, bool) {
 	return h.Cards[0].Value, h.Cards[0].Value == h.Cards[1].Value
 }
 
+func (h Hand) CanDouble() bool {
+	return len(h.Cards) == 2 && !h.SplitAcesHand
+}
+
 func (h Hand) IsNatural() bool {
-	return len(h.Cards) == 2
+	return len(h.Cards) == 2 && !h.SplitAcesHand && !h.SplitHand
 }
 
 func (h Hand) ToString() string {

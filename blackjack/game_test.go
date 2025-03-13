@@ -45,7 +45,8 @@ func PlayDealerHand(t *testing.T, dealerHand core.Hand, rules *BlackjackGameRule
 func PlaySingleTestHand(t *testing.T, playerHand core.Hand, dealerUpcard int) []core.Hand {
 	rules := MakeTestRules()
 	deck := makeTestDeck()
-	return rules.PlayPlayerHand(playerHand, core.Card{Value: dealerUpcard}, deck, 1, 0)
+	splitCounter := 0
+	return rules.PlayPlayerHand(playerHand, core.Card{Value: dealerUpcard}, deck, 1, &splitCounter)
 }
 
 func PlaySingleTestHandNonSplit(t *testing.T, playerHand core.Hand, dealerUpcard int) core.Hand {
@@ -136,7 +137,8 @@ func Test_Play888Hand(t *testing.T) {
 	// 88 v dealer 6. Should split
 	rules := MakeTestRules().SetMaxPlayerSplits(3)
 	cards := MakeHand(8, 8)
-	res := rules.PlayPlayerHand(cards, core.Card{Value: 7}, deck, 1, 0)
+	splitCounter := 0
+	res := rules.PlayPlayerHand(cards, core.Card{Value: 7}, deck, 1, &splitCounter)
 	if len(res) != 4 {
 		t.Fatalf("Should have split on a double 8s")
 	}

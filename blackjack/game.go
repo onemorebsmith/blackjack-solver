@@ -117,8 +117,8 @@ func CalculateHandResult(playerHand core.Hand, dealerHand core.Hand, bid float32
 
 	playerValue, _ := playerHand.HandValue()
 	dealerValue, _ := dealerHand.HandValue()
-	playerNaturalBlackjack := playerValue == 21 && playerHand.IsNatural() && !playerHand.SplitHand
-	dealerNaturalBlackjack := dealerHand.IsNatural() && dealerValue == 21
+	playerNaturalBlackjack := playerValue == 21 && playerHand.IsNatural()
+	dealerNaturalBlackjack := dealerValue == 21 && dealerHand.IsNatural()
 
 	// deal with blackjacks
 	if dealerNaturalBlackjack && playerNaturalBlackjack {
@@ -157,9 +157,9 @@ func (rs *BlackjackGameRules) PlayPlayerHand(playerHand core.Hand, dealerUpcard 
 			finished = true
 		case PlayerDecisionSplitAces:
 			hands := make([]core.Hand, 0, 4)
-			hands = append(hands, rs.PlayPlayerHand(core.Hand{Cards: []core.Card{playerHand.Cards[0], deck.Deal()}, SplitHand: true},
+			hands = append(hands, rs.PlayPlayerHand(core.Hand{Cards: []core.Card{playerHand.Cards[0], deck.Deal()}, SplitAcesHand: true},
 				dealerUpcard, deck, bid, splitCounter)...)
-			hands = append(hands, rs.PlayPlayerHand(core.Hand{Cards: []core.Card{playerHand.Cards[1], deck.Deal()}, SplitHand: true},
+			hands = append(hands, rs.PlayPlayerHand(core.Hand{Cards: []core.Card{playerHand.Cards[1], deck.Deal()}, SplitAcesHand: true},
 				dealerUpcard, deck, bid, splitCounter)...)
 			return hands // can only take one card after aces
 		case PlayerDecisionSplit:

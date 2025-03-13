@@ -91,9 +91,8 @@ func (rs *BlackjackGameRules) MakeDealerDecision(dealerCards core.Hand) PlayerDe
 }
 
 func (rs *BlackjackGameRules) MakePlayerDecision(playerCards core.Hand, dealerUpcard core.Card, splitCounter int) PlayerDecision {
-	natural := playerCards.IsNatural()
 	playerValue, soft := playerCards.HandValue()
-	if natural && playerValue == 21 { // Natural 21
+	if playerCards.IsNatural() && playerValue == 21 { // Natural 21
 		return PlayerDecisionNatural21
 	}
 
@@ -101,15 +100,20 @@ func (rs *BlackjackGameRules) MakePlayerDecision(playerCards core.Hand, dealerUp
 		return PlayerDecisionStand
 	}
 
+	if playerCards.SplitAcesHand {
+		// for a split aces hand you can only split again (if RSA) or stand since you get 1 card only
+		if _, doubleAces := playerCards.IsPair(); doubleAces && rs.ReSplitAces {
+			return PlayerDecisionSplitAces
+		} else {
+			return PlayerDecisionStand
+		}
+	}
+
 	if splitCounter < rs.MaxPlayerSplits {
 		if val, isPair := playerCards.IsPair(); isPair {
 			hash := HashSplit(val, dealerUpcard.Value)
 			if _, exists := rs.playerStrategy.spits[hash]; exists {
 				if val == 11 {
-					// RSA vs NRSA
-					if playerCards.SplitHand && !rs.ReSplitAces {
-						return PlayerDecisionHit
-					}
 					return PlayerDecisionSplitAces
 				} else {
 					return PlayerDecisionSplit
@@ -123,15 +127,16 @@ func (rs *BlackjackGameRules) MakePlayerDecision(playerCards core.Hand, dealerUp
 		Soft:         soft,
 	}
 
+	canDouble := playerCards.CanDouble()
 	if rule, exists := rs.playerStrategy.rules[rule.Hash()]; exists {
 		switch rule.Action {
 		case PlayerActionDoubleOrHit:
-			if natural {
+			if canDouble {
 				return PlayerDecisionDouble
 			}
 			return PlayerDecisionHit
 		case PlayerActionDoubleOrStand:
-			if natural {
+			if canDouble {
 				return PlayerDecisionDouble
 			}
 			return PlayerDecisionStand
