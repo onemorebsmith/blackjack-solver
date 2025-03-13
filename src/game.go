@@ -1,6 +1,8 @@
 package blackjack
 
 import (
+	"math"
+
 	"github.com/onemorebsmith/blackjack-solver/src/blackjack/core"
 	"github.com/onemorebsmith/blackjack-solver/src/blackjack/strategies"
 )
@@ -59,6 +61,70 @@ func (bj *BlackjackGameRules) SetDoubleAfterSplit(v bool) *BlackjackGameRules {
 func (bj *BlackjackGameRules) SetUseSimpleDeviations(v bool) *BlackjackGameRules {
 	bj.UseSimpleDeviations = v
 	return bj
+}
+
+func PlayGame(rules BlackjackGameRules, decks int, shoes int, bankrole float32, handsPerHour float32) GameResults {
+	deck := core.GenerateShoe(decks).Shuffle()
+	// create a new instance of the tracking strategy as to not share state
+	// with the other threads
+	rules.TrackingStrategy = rules.TrackingStrategy.Instance()
+
+	deck.PreviewCard = func(c core.Card) {
+		rules.TrackingStrategy.Update(c)
+	}
+	totalGames := 0
+
+	handAVs := make([]float32, 0, shoes*50) // shoes average ~45 hands heads up
+	aggregatedResults := GameResults{}
+	for i := 0; i < shoes; i++ {
+		result := PlayShoe(deck, &rules, bankrole)
+		if hl, ok := rules.TrackingStrategy.(*strategies.HighLowCountStrategy); ok {
+			result.BidsByTC = hl.BidsByTC
+			result.AvgTC = hl.AggregatedTC / float32(hl.Updates)
+			result.HighTC = hl.HighTC
+			result.LowTC = hl.LowTC
+		}
+		rules.TrackingStrategy.Shuffle()
+		deck.Shuffle()
+		totalGames++
+		aggregatedResults = AggregateResults(aggregatedResults, result)
+		handAVs = append(handAVs, result.HandAVs...)
+	}
+	// calculate the population standard dev
+	evAgg := float32(0)
+	handsGroupedHourly := []float32{}
+	hourlyHandCounter := float32(0)
+	hourlyAgg := float32(0)
+	hourlyOverallTotal := float32(0)
+	for _, av := range handAVs {
+		evAgg += av
+		hourlyAgg += av
+		hourlyHandCounter++
+		// this is truly horrendous and should be cleaned up, but in order to calculate hourly standard
+		// dev you need to calculate standard dev across the aggregated hourly AVs instead of
+		// the individual hand AVs
+		if hourlyHandCounter > handsPerHour {
+			hourlyOverallTotal += hourlyAgg
+			handsGroupedHourly = append(handsGroupedHourly, hourlyAgg)
+			hourlyHandCounter = 0
+			hourlyAgg = 0
+		}
+	}
+	varianceAgg := float32(0)
+	averageEV := evAgg / float32(len(handAVs))
+	for _, r := range handAVs {
+		varianceAgg += (r - averageEV) * (r - averageEV)
+	}
+	hourlyVariance := float32(0)
+	hourlyOverallTotal /= float32(len(handsGroupedHourly))
+	for _, r := range handsGroupedHourly {
+		hourlyVariance += (r - averageEV) * (r - averageEV)
+	}
+
+	aggregatedResults.HourlyEVVariance = float32(math.Sqrt(float64(hourlyVariance) / float64(len(handsGroupedHourly))))
+	aggregatedResults.EVVariance = float32(math.Sqrt(float64(varianceAgg) / float64(len(handAVs))))
+	aggregatedResults.HandAVs = nil // save some mem
+	return aggregatedResults
 }
 
 func PlayHand(d *core.Deck, rules *BlackjackGameRules) []core.HandResult {
