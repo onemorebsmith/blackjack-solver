@@ -200,9 +200,8 @@ func PlayShoe(deck *core.Deck, rules *BlackjackGameRules, bankrole float32) Game
 			} else if bankrole < before {
 				netLosses++
 			}
-		}
-		for _, hr := range handResults {
-			if hr.Result == core.HandResultBlackjack {
+
+			if r.Result == core.HandResultBlackjack {
 				blackjacks++
 			}
 		}

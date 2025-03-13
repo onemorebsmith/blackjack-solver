@@ -91,7 +91,7 @@ func (rs *BlackjackGameRules) MakeDealerDecision(dealerCards core.Hand) PlayerDe
 }
 
 func (rs *BlackjackGameRules) MakePlayerDecision(playerCards core.Hand, dealerUpcard core.Card, splitCounter int) PlayerDecision {
-	natural := len(playerCards.Cards) == 2
+	natural := playerCards.IsNatural()
 	playerValue, soft := playerCards.HandValue()
 	if natural && playerValue == 21 { // Natural 21
 		return PlayerDecisionNatural21
@@ -144,20 +144,20 @@ func (rs *BlackjackGameRules) MakePlayerDecision(playerCards core.Hand, dealerUp
 
 func InitGame(rules RulesMap, splits []SplitRule) *Ruleset {
 	ruleMap := RuleMap{}
-	// default rules, stand at every value. These will be overwritten later
+	// default rules, hit at every value < 8. These will be overwritten later
 	for dealerCard := 2; dealerCard <= 11; dealerCard++ {
-		for playerCard := 2; playerCard <= 21; playerCard++ {
+		for playerCard := 2; playerCard <= 8; playerCard++ {
 			created := Rule{
 				DealerUpCard: dealerCard,
 				PlayerValue:  playerCard,
-				Action:       PlayerActionStand,
+				Action:       PlayerActionHit,
 				Soft:         false,
 			}
 			ruleMap[created.Hash()] = created
 			createdSoft := Rule{
 				DealerUpCard: dealerCard,
 				PlayerValue:  playerCard,
-				Action:       PlayerActionStand,
+				Action:       PlayerActionHit,
 				Soft:         true,
 			}
 			ruleMap[createdSoft.Hash()] = createdSoft

@@ -8,6 +8,8 @@ func InitFlatbetStrategy() *FlatbetStrategy {
 	return &FlatbetStrategy{}
 }
 
+func (strat *FlatbetStrategy) Instance() TrackingStrategy { return strat }
+
 func (strat *FlatbetStrategy) Update(cards ...core.Card) {}
 
 func (strat *FlatbetStrategy) Shuffle() {}

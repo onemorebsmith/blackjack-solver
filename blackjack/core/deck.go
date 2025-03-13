@@ -1,7 +1,7 @@
 package core
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"strings"
 )
 
@@ -14,6 +14,7 @@ type Deck struct {
 	idx         int
 	deckSize    int
 	PreviewCard func(c Card)
+	source      *rand.Rand
 }
 
 // Creates `shoe` of 1+ decks, unshuffled initially
@@ -23,7 +24,7 @@ func GenerateShoe(decks int) *Deck {
 		additionalDeck := GenerateDeck()
 		shoe.Cards = append(shoe.Cards, additionalDeck.Cards...)
 	}
-
+	shoe.source = rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
 	shoe.deckSize = decks * DeckSize
 	return shoe
 }
@@ -56,9 +57,13 @@ func (d *Deck) ToString() string {
 }
 
 func (d *Deck) Shuffle() *Deck {
-	rand.Shuffle(d.deckSize, func(i, j int) {
+	// swiped & modified from https://go.dev/src/math/rand/v2/rand.go
+	n := d.deckSize - 1
+	for i := n - 1; i > 0; i-- {
+		j := int(d.source.Uint64N(uint64(i + 1)))
 		d.Cards[i], d.Cards[j] = d.Cards[j], d.Cards[i]
-	})
+	}
+
 	d.idx = 0
 	return d
 }

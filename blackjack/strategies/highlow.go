@@ -9,12 +9,22 @@ type HighLowCountStrategy struct {
 	HighTC       float32
 	LowTC        float32
 	AggregatedTC float32
+	BidsByTC     map[int]int
 }
 
 func InitHighLow(bs map[int]BidStrategy) *HighLowCountStrategy {
 	return &HighLowCountStrategy{
 		RunningCount: 0,
 		betspred:     *NewBidspread(bs),
+		BidsByTC:     map[int]int{},
+	}
+}
+
+func (strat *HighLowCountStrategy) Instance() TrackingStrategy {
+	return &HighLowCountStrategy{
+		RunningCount: 0,
+		betspred:     strat.betspred,
+		BidsByTC:     map[int]int{},
 	}
 }
 
@@ -46,5 +56,6 @@ func (strat *HighLowCountStrategy) Bid(d core.Deck) BidStrategy {
 		strat.HighTC = tc
 	}
 	strat.AggregatedTC += tc
+	strat.BidsByTC[int(tc)]++
 	return strat.betspred.Bid(int(tc))
 }

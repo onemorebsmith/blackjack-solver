@@ -12,17 +12,17 @@ type Bidspread struct {
 }
 
 func NewBidspread(spread map[int]BidStrategy) *Bidspread {
-	maxSpread := 0
+	maxTC := 0
 	maxBet := BidStrategy{Hands: 1, Units: 1}
-	for k, v := range spread {
-		if k >= maxSpread {
-			maxSpread = k
-			maxBet = v
+	for tc, bid := range spread {
+		if tc >= maxTC {
+			maxTC = tc
+			maxBet = bid
 		}
 	}
 	return &Bidspread{
 		spread:   spread,
-		maxCount: maxSpread,
+		maxCount: maxTC,
 		maxBet:   maxBet,
 	}
 }
