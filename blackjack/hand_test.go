@@ -8,7 +8,7 @@ import (
 
 func TestHandCounts(t *testing.T) {
 	tests := []struct {
-		Hand     Hand
+		Hand     core.Hand
 		Expected int
 		Soft     bool
 	}{
@@ -30,7 +30,6 @@ func TestHandCounts(t *testing.T) {
 		// Hard Ace hands
 		{Hand: MakeHand(11, 10, 10), Expected: 21, Soft: false}, // Ace is no longer soft, can only be a 1
 		{Hand: MakeHand(11, 10, 9), Expected: 20, Soft: false},
-
 		{Hand: MakeHand(10, 10), Expected: 20, Soft: false},
 		{Hand: MakeHand(10, 9), Expected: 19, Soft: false},
 		{Hand: MakeHand(10, 6), Expected: 16, Soft: false},
@@ -50,7 +49,7 @@ func TestHandCounts(t *testing.T) {
 
 func TestH17SoftHandDecisions(t *testing.T) {
 	tests := []struct {
-		Hand              Hand
+		Hand              core.Hand
 		Expected          int
 		ExpectedDecisions map[int]PlayerDecision
 	}{
@@ -174,24 +173,146 @@ func TestH17SoftHandDecisions(t *testing.T) {
 			decision := rules.MakePlayerDecision(tc.Hand, core.Card{Value: dealerCard}, 0)
 			if hasDefault {
 				if defAction != decision {
-					t.Fatalf("Unexpected default player decision for `%s` vs `%d`", tc.Hand.toString(), dealerCard)
+					t.Fatalf("Unexpected default player decision for `%s` vs `%d`", tc.Hand.ToString(), dealerCard)
 				}
 			} else {
 				expectedAction := tc.ExpectedDecisions[dealerCard]
 				if expectedAction != decision {
 					t.Fatalf("Unexpected player decision for `%s` vs `%d`, got %s, expected %s",
-						tc.Hand.toString(), dealerCard, decision.ToString(), expectedAction.ToString())
+						tc.Hand.ToString(), dealerCard, decision.ToString(), expectedAction.ToString())
 				}
 			}
 		}
 	}
 }
 
+type HandTests struct {
+	Hand              core.Hand
+	ExpectedDecisions map[int]PlayerDecision
+}
+
+func runHandTests(t *testing.T, tests []HandTests) {
+	t.Helper()
+	rules := MakeTestRules()
+	for _, tc := range tests {
+		defAction, hasDefault := tc.ExpectedDecisions[-1]
+		for dealerCard := 2; dealerCard < 11; dealerCard++ {
+			decision := rules.MakePlayerDecision(tc.Hand, core.Card{Value: dealerCard}, 0)
+			if hasDefault {
+				if defAction != decision {
+					t.Fatalf("Unexpected default player decision for `%s` vs `%d`", tc.Hand.ToString(), dealerCard)
+				}
+			} else {
+				expectedAction := tc.ExpectedDecisions[dealerCard]
+				if expectedAction != decision {
+					t.Fatalf("Unexpected player decision for `%s` vs `%d`, got %s, expected %s",
+						tc.Hand.ToString(), dealerCard, decision.ToString(), expectedAction.ToString())
+				}
+			}
+		}
+	}
+}
+
+func TestH17ThreeCardSoftHandDecisions(t *testing.T) {
+	tests := []HandTests{
+		// A2A
+		{Hand: MakeHand(11, 2, 11), ExpectedDecisions: map[int]PlayerDecision{
+			2:  PlayerDecisionHit,
+			3:  PlayerDecisionHit,
+			4:  PlayerDecisionHit,
+			5:  PlayerDecisionHit,
+			6:  PlayerDecisionHit,
+			7:  PlayerDecisionHit,
+			8:  PlayerDecisionHit,
+			9:  PlayerDecisionHit,
+			10: PlayerDecisionHit,
+			11: PlayerDecisionHit,
+		}},
+		// A22
+		{Hand: MakeHand(11, 2, 2), ExpectedDecisions: map[int]PlayerDecision{
+			2:  PlayerDecisionHit,
+			3:  PlayerDecisionHit,
+			4:  PlayerDecisionHit,
+			5:  PlayerDecisionHit,
+			6:  PlayerDecisionHit,
+			7:  PlayerDecisionHit,
+			8:  PlayerDecisionHit,
+			9:  PlayerDecisionHit,
+			10: PlayerDecisionHit,
+			11: PlayerDecisionHit,
+		}},
+		// A23
+		{Hand: MakeHand(11, 2, 3), ExpectedDecisions: map[int]PlayerDecision{
+			2:  PlayerDecisionHit,
+			3:  PlayerDecisionHit,
+			4:  PlayerDecisionHit,
+			5:  PlayerDecisionHit,
+			6:  PlayerDecisionHit,
+			7:  PlayerDecisionHit,
+			8:  PlayerDecisionHit,
+			9:  PlayerDecisionHit,
+			10: PlayerDecisionHit,
+			11: PlayerDecisionHit,
+		}},
+		// A33
+		{Hand: MakeHand(11, 3, 3), ExpectedDecisions: map[int]PlayerDecision{
+			2:  PlayerDecisionHit,
+			3:  PlayerDecisionHit,
+			4:  PlayerDecisionHit,
+			5:  PlayerDecisionHit,
+			6:  PlayerDecisionHit,
+			7:  PlayerDecisionHit,
+			8:  PlayerDecisionHit,
+			9:  PlayerDecisionHit,
+			10: PlayerDecisionHit,
+			11: PlayerDecisionHit,
+		}},
+		// A34
+		{Hand: MakeHand(11, 3, 4), ExpectedDecisions: map[int]PlayerDecision{
+			2:  PlayerDecisionStand,
+			3:  PlayerDecisionStand,
+			4:  PlayerDecisionStand,
+			5:  PlayerDecisionStand,
+			6:  PlayerDecisionStand,
+			7:  PlayerDecisionStand,
+			8:  PlayerDecisionStand,
+			9:  PlayerDecisionHit,
+			10: PlayerDecisionHit,
+			11: PlayerDecisionHit,
+		}},
+		// A8
+		{Hand: MakeHand(11, 5, 3), ExpectedDecisions: map[int]PlayerDecision{
+			2:  PlayerDecisionStand,
+			3:  PlayerDecisionStand,
+			4:  PlayerDecisionStand,
+			5:  PlayerDecisionStand,
+			6:  PlayerDecisionStand,
+			7:  PlayerDecisionStand,
+			8:  PlayerDecisionStand,
+			9:  PlayerDecisionStand,
+			10: PlayerDecisionStand,
+			11: PlayerDecisionStand,
+		}},
+		// A9
+		{Hand: MakeHand(11, 3, 6), ExpectedDecisions: map[int]PlayerDecision{
+			2:  PlayerDecisionStand,
+			3:  PlayerDecisionStand,
+			4:  PlayerDecisionStand,
+			5:  PlayerDecisionStand,
+			6:  PlayerDecisionStand,
+			7:  PlayerDecisionStand,
+			8:  PlayerDecisionStand,
+			9:  PlayerDecisionStand,
+			10: PlayerDecisionStand,
+			11: PlayerDecisionStand,
+		}},
+	}
+
+	runHandTests(t, tests)
+}
+
 func TestH17HardHandDecisions(t *testing.T) {
-	tests := []struct {
-		Hand              Hand
-		ExpectedDecisions map[int]PlayerDecision
-	}{
+	tests := []HandTests{
 		// Soft Ace hands
 		{Hand: MakeHand(10, 7), ExpectedDecisions: map[int]PlayerDecision{
 			-1: PlayerDecisionStand,
@@ -297,34 +418,11 @@ func TestH17HardHandDecisions(t *testing.T) {
 			-1: PlayerDecisionHit,
 		}},
 	}
-
-	rules := MakeTestRules()
-
-	for _, tc := range tests {
-		defAction, hasDefault := tc.ExpectedDecisions[-1]
-		for dealerCard := 2; dealerCard < 11; dealerCard++ {
-			decision := rules.MakePlayerDecision(tc.Hand, core.Card{Value: dealerCard}, 0)
-			if hasDefault {
-				if defAction != decision {
-					t.Fatalf("Unexpected default player decision for `%s` vs `%d` , got %s, expected %s",
-						tc.Hand.toString(), dealerCard, decision.ToString(), defAction.ToString())
-				}
-			} else {
-				expectedAction := tc.ExpectedDecisions[dealerCard]
-				if expectedAction != decision {
-					t.Fatalf("Unexpected player decision for `%s` vs `%d`, got %s, expected %s",
-						tc.Hand.toString(), dealerCard, decision.ToString(), expectedAction.ToString())
-				}
-			}
-		}
-	}
+	runHandTests(t, tests)
 }
 
 func TestH17SplitHandDecisions(t *testing.T) {
-	tests := []struct {
-		Hand              Hand
-		ExpectedDecisions map[int]PlayerDecision
-	}{
+	tests := []HandTests{
 		// AA
 		{Hand: MakeHand(11, 11), ExpectedDecisions: map[int]PlayerDecision{
 			-1: PlayerDecisionSplitAces,
@@ -433,7 +531,6 @@ func TestH17SplitHandDecisions(t *testing.T) {
 	}
 
 	rules := MakeTestRules()
-
 	for _, tc := range tests {
 		defAction, hasDefault := tc.ExpectedDecisions[-1]
 		for dealerCard := 2; dealerCard < 11; dealerCard++ {
@@ -442,14 +539,14 @@ func TestH17SplitHandDecisions(t *testing.T) {
 			if hasDefault {
 				if defAction != decision {
 					t.Fatalf("Unexpected default player decision for `%s` vs `%d` , got %s, expected %s",
-						tc.Hand.toString(), dealerCard, decision.ToString(), defAction.ToString())
+						tc.Hand.ToString(), dealerCard, decision.ToString(), defAction.ToString())
 				}
 			} else {
 				expectedAction := tc.ExpectedDecisions[dealerCard]
 				expectedSplit := decision == PlayerDecisionSplitAces || decision == PlayerDecisionSplit
 				if expectedSplit != split {
 					t.Fatalf("Unexpected player decision for `%s` vs `%d`, got %s, expected %s",
-						tc.Hand.toString(), dealerCard, decision.ToString(), expectedAction.ToString())
+						tc.Hand.ToString(), dealerCard, decision.ToString(), expectedAction.ToString())
 				}
 			}
 		}
@@ -458,7 +555,7 @@ func TestH17SplitHandDecisions(t *testing.T) {
 
 func TestH17DealerDecisions(t *testing.T) {
 	tests := []struct {
-		Hand              Hand
+		Hand              core.Hand
 		ExpectedDecisions PlayerDecision
 	}{
 		// Hard hands
@@ -489,8 +586,18 @@ func TestH17DealerDecisions(t *testing.T) {
 		{Hand: MakeHand(11, 4), ExpectedDecisions: PlayerDecisionHit},
 		{Hand: MakeHand(11, 3), ExpectedDecisions: PlayerDecisionHit},
 		{Hand: MakeHand(11, 2), ExpectedDecisions: PlayerDecisionHit},
-		// Random
 
+		// Multi-card Soft hands
+		{Hand: MakeHand(11, 5, 5), ExpectedDecisions: PlayerDecisionStand},
+		{Hand: MakeHand(11, 5, 4), ExpectedDecisions: PlayerDecisionStand},
+		{Hand: MakeHand(11, 4, 4), ExpectedDecisions: PlayerDecisionStand},
+		{Hand: MakeHand(11, 4, 3), ExpectedDecisions: PlayerDecisionStand},
+		{Hand: MakeHand(11, 2, 4), ExpectedDecisions: PlayerDecisionStand},
+		{Hand: MakeHand(11, 2, 3), ExpectedDecisions: PlayerDecisionHit},
+		{Hand: MakeHand(11, 2, 2), ExpectedDecisions: PlayerDecisionHit},
+		{Hand: MakeHand(11, 2, 11), ExpectedDecisions: PlayerDecisionHit},
+
+		// Random
 		{Hand: MakeHand(11, 11, 11, 11), ExpectedDecisions: PlayerDecisionHit},
 		{Hand: MakeHand(11, 11, 7, 2), ExpectedDecisions: PlayerDecisionStand},
 		{Hand: MakeHand(5, 5, 3, 2), ExpectedDecisions: PlayerDecisionHit},
@@ -504,7 +611,7 @@ func TestH17DealerDecisions(t *testing.T) {
 			decision := rules.MakeDealerDecision(tc.Hand)
 			if decision != tc.ExpectedDecisions {
 				t.Fatalf("Unexpected dealer decision for `%s`, got %s, expected %s",
-					tc.Hand.toString(), decision.ToString(), tc.ExpectedDecisions.ToString())
+					tc.Hand.ToString(), decision.ToString(), tc.ExpectedDecisions.ToString())
 			}
 		}
 	}

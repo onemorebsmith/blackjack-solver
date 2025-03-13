@@ -11,8 +11,8 @@ func MakeTestRules() *BlackjackGameRules {
 	return NewBlackjackGameRules(InitGame(H17Rules, H17Splits))
 }
 
-func MakeHand(values ...int) Hand {
-	h := Hand{}
+func MakeHand(values ...int) core.Hand {
+	h := core.Hand{}
 	for _, v := range values {
 		name := fmt.Sprintf("%d", v)
 		if v == 11 {

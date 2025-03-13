@@ -2,25 +2,34 @@ package main
 
 import (
 	"log"
+	"sync"
 
 	"github.com/onemorebsmith/blackjack-solver/blackjack"
 	"github.com/onemorebsmith/blackjack-solver/blackjack/core"
 	"github.com/onemorebsmith/blackjack-solver/blackjack/strategies"
 )
 
-const startingBankrole = float32(1000) // in bet units
 // will run iterations * handsPerGame times
-const handsPerGame = 10000
-const iterations = 100
+const shoesPerGame = 10000
+const iterations = 10
 
-func PlayGame(rules *blackjack.BlackjackGameRules, hands int64, bankrole float32) blackjack.GameResults {
+func PlayGame(rules *blackjack.BlackjackGameRules, shoes int, bankrole float32) blackjack.GameResults {
 	deck := core.GenerateShoe(6).Shuffle()
-
+	deck.PreviewCard = func(c core.Card) {
+		rules.TrackingStrategy.Update(c)
+	}
 	totalGames := 0
 
 	results := []blackjack.GameResults{}
-	for i := 0; i < handsPerGame; i++ {
-		results = append(results, blackjack.PlayShoe(deck, rules, bankrole))
+	for i := 0; i < shoes; i++ {
+		result := blackjack.PlayShoe(deck, rules, bankrole)
+		if hl, ok := rules.TrackingStrategy.(*strategies.HighLowCountStrategy); ok {
+			result.AvgTC = hl.AggregatedTC / float32(hl.Updates)
+			result.HighTC = hl.HighTC
+			result.LowTC = hl.LowTC
+		}
+
+		results = append(results, result)
 		rules.TrackingStrategy.Shuffle()
 		deck.Shuffle()
 		totalGames++
@@ -45,25 +54,35 @@ func main() {
 		4: {Hands: 1, Units: 12},
 	})
 	// resultsChannel := make(chan blackjack.GameResults)
-	overallResults := make([]blackjack.GameResults, 0, iterations)
+	overallResults := make([]blackjack.GameResults, iterations)
 	// sync := make(chan bool, 16)
 	// for i := 0; i < 16; i++ {
 	// 	sync <- true
 	// }
+	wg := sync.WaitGroup{}
 
-	for i := 0; i < 10; i++ {
-		overallResults = append(overallResults, PlayGame(bjRules, handsPerGame, startingBankrole))
+	for i := 0; i < iterations; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			overallResults[idx] = PlayGame(bjRules, shoesPerGame, 10000)
+		}(i)
 	}
+	wg.Wait()
 
 	aggregatedResults := blackjack.AggregateResults(overallResults...)
 	log.Println("====================================")
 	log.Printf("%d Deck, %f pen, %d hands", 6, bjRules.Penetration, aggregatedResults.Hands)
-	log.Printf("EV (units):       %f", aggregatedResults.EV)
-	log.Printf("EV (hand):        %f", aggregatedResults.EV/float32(aggregatedResults.Hands))
-	log.Printf("EV (100 hands):   %f", aggregatedResults.EV/float32(aggregatedResults.Hands)*100*50)
-	log.Printf("W/L/P:            %d/%d/%d", aggregatedResults.Wins, aggregatedResults.Losses, aggregatedResults.Pushes)
-	log.Printf("Blackjacks:       %d", aggregatedResults.Blackjacks)
-	log.Printf("Blackjack (pct):  %f", float32(aggregatedResults.Blackjacks)/float32(aggregatedResults.Hands))
+	log.Printf("   EV (units):       %f", aggregatedResults.EV)
+	log.Printf("   EV (hand):        %f", aggregatedResults.EV/float32(aggregatedResults.Hands))
+	log.Printf("   EV (100 hands):   %f", aggregatedResults.EV/float32(aggregatedResults.Hands)*100*50)
+	log.Printf("   W/L/P:            %d/%d/%d", aggregatedResults.Wins, aggregatedResults.Losses, aggregatedResults.Pushes)
+	log.Printf("   Blackjacks:       %d", aggregatedResults.Blackjacks)
+	log.Printf("   Blackjack (pct):  %f", float32(aggregatedResults.Blackjacks)/float32(aggregatedResults.Hands))
+	log.Printf("TC Stats --- ")
+	log.Printf("   HighTC (avg)      %f ", aggregatedResults.HighTC/float32(aggregatedResults.Hands))
+	log.Printf("   LowTC  (avg)      %f ", aggregatedResults.LowTC/float32(aggregatedResults.Hands))
+	log.Printf("   AvgTC  (avg)      %f ", aggregatedResults.AvgTC/float32(aggregatedResults.Hands))
 
 	log.Printf("Overall: %+v", aggregatedResults)
 }

@@ -8,13 +8,13 @@ type GameResults struct {
 	Blackjacks int
 	EV         float32
 	Result     float32
-	AvgTc      float32
-	TCMap      map[int]int
+	AvgTC      float32
+	HighTC     float32
+	LowTC      float32
 }
 
 func AggregateResults(results ...GameResults) GameResults {
 	aggregated := GameResults{}
-	aggregated.TCMap = map[int]int{}
 	for _, r := range results {
 		aggregated.EV += r.EV
 		aggregated.Hands += r.Hands
@@ -22,10 +22,9 @@ func AggregateResults(results ...GameResults) GameResults {
 		aggregated.Wins += r.Wins
 		aggregated.Losses += r.Losses
 		aggregated.Pushes += r.Pushes
-		aggregated.AvgTc += r.AvgTc
-		for count, freq := range r.TCMap {
-			aggregated.TCMap[count] += freq
-		}
+		aggregated.AvgTC += r.AvgTC
+		aggregated.HighTC += r.HighTC
+		aggregated.LowTC += r.LowTC
 	}
 	return aggregated
 }

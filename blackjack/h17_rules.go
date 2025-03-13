@@ -22,7 +22,9 @@ type RuleV2 struct {
 	Actions map[bool]map[int]PlayerAction // map[soft|hard]map[dealerUpcard]Action
 }
 
-var RulesV2 = map[int]RuleV2{ // Anything not listed is implicitly a stand
+type RulesMap map[int]RuleV2
+
+var H17Rules = RulesMap{ // Anything not listed is implicitly a stand
 	2: {map[bool]map[int]PlayerAction{
 		false: { // hard
 			2:  PlayerActionHit,
@@ -179,6 +181,7 @@ var RulesV2 = map[int]RuleV2{ // Anything not listed is implicitly a stand
 			16: PlayerActionDoubleOrHit,
 			17: PlayerActionDoubleOrHit,
 			18: PlayerActionDoubleOrStand,
+			19: PlayerActionDoubleOrStand,
 		}}},
 	7: {map[bool]map[int]PlayerAction{
 		false: { // hard
@@ -269,7 +272,7 @@ var RulesV2 = map[int]RuleV2{ // Anything not listed is implicitly a stand
 			14: PlayerActionHit,
 			15: PlayerActionHit,
 			16: PlayerActionHit,
-			17: PlayerActionHit,
+			17: PlayerActionStand,
 		}, true: { // soft
 			2:  PlayerActionHit,
 			3:  PlayerActionHit,
@@ -361,30 +364,6 @@ var RulesV2 = map[int]RuleV2{ // Anything not listed is implicitly a stand
 			17: PlayerActionHit,
 			18: PlayerActionHit,
 		}}}}
-
-var H17Rules = []RuleShorthand{
-	{DealerCard: 2, PlayerDoublesOn: []int{10, 11}, PlayerHitsOn: rng(2, 12)},
-	{DealerCard: 3, PlayerDoublesOn: []int{9, 10, 11}, PlayerHitsOn: rng(2, 12)},
-	{DealerCard: 4, PlayerDoublesOn: []int{9, 10, 11}, PlayerHitsOn: rng(2, 11)},
-	{DealerCard: 5, PlayerDoublesOn: []int{9, 10, 11}, PlayerHitsOn: rng(2, 11)},
-	{DealerCard: 6, PlayerDoublesOn: []int{9, 10, 11}, PlayerHitsOn: rng(2, 11)},
-	{DealerCard: 7, PlayerDoublesOn: []int{10, 11}, PlayerHitsOn: rng(2, 16)},
-	{DealerCard: 8, PlayerDoublesOn: []int{10, 11}, PlayerHitsOn: rng(2, 16)},
-	{DealerCard: 9, PlayerDoublesOn: []int{10, 11}, PlayerHitsOn: rng(2, 16)},
-	{DealerCard: 10, PlayerDoublesOn: []int{11}, PlayerHitsOn: rng(2, 16)},
-	{DealerCard: 11, PlayerDoublesOn: []int{11}, PlayerHitsOn: rng(2, 16)},
-
-	{Soft: true, DealerCard: 2, PlayerDoublesOn: []int{18}, PlayerHitsOn: []int{13, 14, 15, 16, 17}},
-	{Soft: true, DealerCard: 3, PlayerDoublesOn: []int{18, 17}, PlayerHitsOn: []int{13, 14, 15, 16}},
-	{Soft: true, DealerCard: 4, PlayerDoublesOn: []int{18, 17, 16, 15}, PlayerHitsOn: []int{13, 14}},
-	{Soft: true, DealerCard: 5, PlayerDoublesOn: []int{18, 17, 16, 15, 14, 13}, PlayerHitsOn: []int{}},
-	{Soft: true, DealerCard: 6, PlayerDoublesOn: []int{19, 18, 17, 16, 15, 14, 13}, PlayerHitsOn: []int{}},
-	{Soft: true, DealerCard: 7, PlayerHitsOn: []int{17, 16, 15, 14, 13}},
-	{Soft: true, DealerCard: 8, PlayerHitsOn: []int{17, 16, 15, 14, 13}},
-	{Soft: true, DealerCard: 9, PlayerHitsOn: []int{18, 17, 16, 15, 14, 13}},
-	{Soft: true, DealerCard: 10, PlayerHitsOn: []int{18, 17, 16, 15, 14, 13}},
-	{Soft: true, DealerCard: 11, PlayerHitsOn: []int{18, 17, 16, 15, 14, 13}},
-}
 
 var H17Splits = []SplitRule{
 	{PlayerCard: 11, DealerUpcard: []int{2, 3, 4, 5, 6, 7, 8, 9, 10, 11}},

@@ -6,36 +6,6 @@ import (
 	"github.com/onemorebsmith/blackjack-solver/blackjack/core"
 )
 
-type HandResult int
-
-const (
-	HandResultPush HandResult = iota
-	HandResultBlackjackPush
-	HandResultWin
-	HandResultBlackjack
-	HandResultDealerBlackjack
-	HandResultInsuranceSave
-	HandResultLose
-)
-
-func (h HandResult) ToString() string {
-	switch h {
-	case HandResultPush:
-		return `push`
-	case HandResultBlackjackPush:
-		return `blackjack pushs`
-	case HandResultBlackjack:
-		return `blackjack`
-	case HandResultLose:
-		return `lose`
-	case HandResultDealerBlackjack:
-		return `dealer blackjack`
-	case HandResultWin:
-		return `win`
-	}
-	return `unknown`
-}
-
 type SplitRule struct {
 	PlayerCard   int
 	DealerUpcard []int // split against these dealer cards
@@ -107,12 +77,11 @@ func (d PlayerDecision) ToString() string {
 	return `unknown`
 }
 
-func (rs *BlackjackGameRules) MakeDealerDecision(dealerCards Hand) PlayerDecision {
+func (rs *BlackjackGameRules) MakeDealerDecision(dealerCards core.Hand) PlayerDecision {
 	value, soft := dealerCards.HandValue()
 	if value > 17 {
 		return PlayerDecisionStand
-	}
-	if value == 17 {
+	} else if value == 17 {
 		if soft && rs.DealerHitsSoft17 {
 			return PlayerDecisionHit
 		}
@@ -121,7 +90,7 @@ func (rs *BlackjackGameRules) MakeDealerDecision(dealerCards Hand) PlayerDecisio
 	return PlayerDecisionHit
 }
 
-func (rs *BlackjackGameRules) MakePlayerDecision(playerCards Hand, dealerUpcard core.Card, splitCounter int) PlayerDecision {
+func (rs *BlackjackGameRules) MakePlayerDecision(playerCards core.Hand, dealerUpcard core.Card, splitCounter int) PlayerDecision {
 	natural := len(playerCards.Cards) == 2
 	playerValue, soft := playerCards.HandValue()
 	if natural && playerValue == 21 { // Natural 21
@@ -173,7 +142,7 @@ func (rs *BlackjackGameRules) MakePlayerDecision(playerCards Hand, dealerUpcard 
 	return PlayerDecisionStand
 }
 
-func InitGame(rules []RuleShorthand, splits []SplitRule) *Ruleset {
+func InitGame(rules RulesMap, splits []SplitRule) *Ruleset {
 	ruleMap := RuleMap{}
 	// default rules, stand at every value. These will be overwritten later
 	for dealerCard := 2; dealerCard <= 11; dealerCard++ {
@@ -195,7 +164,7 @@ func InitGame(rules []RuleShorthand, splits []SplitRule) *Ruleset {
 		}
 	}
 
-	for dealerCard, rule := range RulesV2 {
+	for dealerCard, rule := range H17Rules {
 		for soft, rules := range rule.Actions {
 			for playerTotal, action := range rules {
 				created := Rule{

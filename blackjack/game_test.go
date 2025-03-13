@@ -1,10 +1,27 @@
 package blackjack
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/onemorebsmith/blackjack-solver/blackjack/core"
 )
+
+func Check(t *testing.T, check bool, message string) {
+	t.Helper()
+	if !check {
+		t.Fatal(message)
+	}
+}
+
+func ExpectHandResult(t *testing.T, res core.HandResult, expected core.HandResult, message string) {
+	t.Helper()
+	Check(t, res.Result == expected.Result,
+		fmt.Sprintf("wrong result, e: %s, g: %s -- %s",
+			expected.Result.ToString(), res.Result.ToString(), message))
+	Check(t, res.AV == expected.AV,
+		fmt.Sprintf("wrong result e: %f, g: %f -- %s", expected.AV, res.AV, message))
+}
 
 func makeTestDeck() *core.Deck {
 	return &core.Deck{
@@ -17,7 +34,7 @@ func makeTestDeck() *core.Deck {
 	}
 }
 
-func PlayDealerHand(t *testing.T, dealerHand Hand, rules *BlackjackGameRules) Hand {
+func PlayDealerHand(t *testing.T, dealerHand core.Hand, rules *BlackjackGameRules) core.Hand {
 	if rules == nil {
 		rules = MakeTestRules()
 	}
@@ -25,16 +42,16 @@ func PlayDealerHand(t *testing.T, dealerHand Hand, rules *BlackjackGameRules) Ha
 	return rules.PlayDealerHand(dealerHand, deck)
 }
 
-func PlaySingleTestHand(t *testing.T, playerHand Hand, dealerUpcard int) []Hand {
+func PlaySingleTestHand(t *testing.T, playerHand core.Hand, dealerUpcard int) []core.Hand {
 	rules := MakeTestRules()
 	deck := makeTestDeck()
 	return rules.PlayPlayerHand(playerHand, core.Card{Value: dealerUpcard}, deck, 1, 0)
 }
 
-func PlaySingleTestHandNonSplit(t *testing.T, playerHand Hand, dealerUpcard int) Hand {
+func PlaySingleTestHandNonSplit(t *testing.T, playerHand core.Hand, dealerUpcard int) core.Hand {
 	res := PlaySingleTestHand(t, playerHand, dealerUpcard)
 	if len(res) != 1 {
-		t.Fatalf("Should not have split %s vs %d", playerHand.toString(), dealerUpcard)
+		t.Fatalf("Should not have split %s vs %d", playerHand.ToString(), dealerUpcard)
 	}
 	return res[0]
 }
@@ -44,13 +61,8 @@ func Test_PlayNaturalBlackjackHand(t *testing.T) {
 	if len(res.Cards) != 2 {
 		t.Fatalf("Should not have hit on a blackjack")
 	}
-	handRes, result := CalculateHandResult(res, 18, 10)
-	if handRes != HandResultBlackjack {
-		t.Fatalf("result should have been blackjack")
-	}
-	if result != 15 {
-		t.Fatalf("incorrect blackjack payout")
-	}
+	handRes := CalculateHandResult(res, MakeHand(10, 5, 3), 10)
+	ExpectHandResult(t, handRes, core.MakeHandResult(core.HandResultBlackjack, 15), "")
 }
 
 func Test_PlayH12Hand(t *testing.T) {
@@ -62,13 +74,8 @@ func Test_PlayH12Hand(t *testing.T) {
 	if v, _ := res.HandValue(); v != 22 {
 		t.Fatalf("Hand value should be 22, got %d", v)
 	}
-	handRes, result := CalculateHandResult(res, 18, 10)
-	if handRes != HandResultLose {
-		t.Fatalf("result should have been bust")
-	}
-	if result != -10 {
-		t.Fatalf("incorrect losing payout")
-	}
+	handRes := CalculateHandResult(res, MakeHand(10, 5, 3), 10)
+	ExpectHandResult(t, handRes, core.MakeHandResult(core.HandResultLose, -10), "")
 }
 
 func Test_PlayH14Hand(t *testing.T) {
@@ -80,13 +87,8 @@ func Test_PlayH14Hand(t *testing.T) {
 	if v, _ := res.HandValue(); v != 14 {
 		t.Fatalf("Hand value should be 14, got %d", v)
 	}
-	handRes, result := CalculateHandResult(res, 22, 10)
-	if handRes != HandResultWin {
-		t.Fatalf("result should have been win")
-	}
-	if result != 10 {
-		t.Fatalf("incorrect losing payout")
-	}
+	handRes := CalculateHandResult(res, MakeHand(10, 5, 7), 10)
+	ExpectHandResult(t, handRes, core.MakeHandResult(core.HandResultWin, 10), "")
 }
 
 func Test_PlayPushHand(t *testing.T) {
@@ -98,13 +100,8 @@ func Test_PlayPushHand(t *testing.T) {
 	if v, _ := res.HandValue(); v != 20 {
 		t.Fatalf("Hand value should be 20, got %d", v)
 	}
-	handRes, result := CalculateHandResult(res, 20, 10)
-	if handRes != HandResultPush {
-		t.Fatalf("result should have been win")
-	}
-	if result != 0 {
-		t.Fatalf("incorrect losing payout")
-	}
+	handRes := CalculateHandResult(res, MakeHand(10, 10), 10)
+	ExpectHandResult(t, handRes, core.MakeHandResult(core.HandResultPush, 0), "")
 }
 
 func Test_Play88Hand(t *testing.T) {
@@ -173,11 +170,10 @@ func Test_PlayAAAHand(t *testing.T) {
 			{Value: 7},  // dealer busts w/ 23
 		},
 	}
-	result, newBankrole := PlayHand(deck, MakeTestRules())
-	_ = result
-	if newBankrole != 2 {
-		t.Fatalf("did not properly pay out after split aces, expected 2 got %f", newBankrole)
-	}
+	results := PlayHand(deck, MakeTestRules())
+	Check(t, len(results) == 2, "expected 2 results")
+	ExpectHandResult(t, results[0], core.MakeHandResult(core.HandResultWin, 1), "hand 1")
+	ExpectHandResult(t, results[1], core.MakeHandResult(core.HandResultWin, 1), "hand 2")
 }
 
 func Test_DealerDoubleAces(t *testing.T) {
@@ -220,5 +216,53 @@ func Test_DealerHits(t *testing.T) {
 	}
 	if v, _ := res.HandValue(); v != 17 {
 		t.Fatalf("Dealer hand should be 17, got %d", v)
+	}
+}
+
+type ExpectedResultHand struct {
+	PlayerHand     core.Hand
+	DealerHand     core.Hand
+	ExpectedResult core.HandResult
+}
+
+func Test_Payouts(t *testing.T) {
+	bid := float32(10)
+	tests := []ExpectedResultHand{
+		{
+			PlayerHand:     MakeHand(11, 10),
+			DealerHand:     MakeHand(10, 7),
+			ExpectedResult: core.MakeHandResult(core.HandResultBlackjack, bid*blackjackPayout),
+		},
+		{
+			PlayerHand:     MakeHand(11, 7),
+			DealerHand:     MakeHand(10, 7, 5),
+			ExpectedResult: core.MakeHandResult(core.HandResultWin, bid),
+		},
+		{
+			PlayerHand:     MakeHand(11, 4, 3),
+			DealerHand:     MakeHand(10, 7),
+			ExpectedResult: core.MakeHandResult(core.HandResultWin, bid),
+		},
+		{
+			PlayerHand:     MakeHand(11, 7),
+			DealerHand:     MakeHand(10, 7),
+			ExpectedResult: core.MakeHandResult(core.HandResultWin, bid),
+		},
+	}
+
+	// All hands vs dealer bust
+	for i := 0; i < 11; i++ {
+		for j := 0; j < 10; j++ {
+			tests = append(tests, ExpectedResultHand{
+				PlayerHand:     MakeHand(i, j),
+				DealerHand:     MakeHand(10, 5, 7),
+				ExpectedResult: core.MakeHandResult(core.HandResultWin, bid),
+			})
+		}
+	}
+
+	for _, test := range tests {
+		result := CalculateHandResult(test.PlayerHand, test.DealerHand, bid)
+		ExpectHandResult(t, result, test.ExpectedResult, test.PlayerHand.ToString())
 	}
 }
